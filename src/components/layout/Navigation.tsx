@@ -50,15 +50,14 @@ export function Navigation({
         <div className="flex items-center justify-between h-20">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4 animate-fade-in">
-            <div className="relative">
-              <img src={DccaLogo} alt="DomCast Logo" className="h-12 w-auto drop-shadow-lg" />
-              <div className="absolute -inset-1 bg-gradient-primary opacity-20 blur-sm rounded-full"></div>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Inventory Management
-              </h1>
-              <p className="text-sm text-muted-foreground font-medium">DomCast Corporation</p>
+            <div className="flex items-center space-x-3">
+              <img src={DccaLogo} alt="DomCast Logo" className="h-12 w-auto" />
+              <div className="hidden sm:block">
+                <h1 className="text-xl font-bold text-foreground">
+                  Inventory Management
+                </h1>
+                <p className="text-sm text-muted-foreground font-medium">DomCast Corporation</p>
+              </div>
             </div>
           </div>
 
