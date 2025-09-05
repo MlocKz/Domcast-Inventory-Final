@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from './lib/supabase';
+import { supabase as _supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment, ShipmentRequest } from './lib/supabase';
 import {
   PackageSearch as InventoryIcon,
@@ -25,6 +25,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import DccaLogo from './assets/DCCA_Logo.png';
 import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
+
+const supabase = _supabase as any;
 
 // Main App Component
 export default function App() {
