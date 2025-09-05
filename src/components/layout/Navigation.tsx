@@ -8,7 +8,11 @@ import {
   Menu as MenuIcon,
   X as XIcon,
   User as UserIcon,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Settings as SettingsIcon,
+  Mail as MailIcon,
+  Key as KeyIcon,
+  ChevronDown
 } from 'lucide-react';
 import DccaLogo from '../../assets/DCCA_Logo.png';
 import { User } from '../../lib/supabase';
@@ -38,6 +42,20 @@ export function Navigation({
   onSignOut
 }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.profile-dropdown-container')) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filteredNavItems = navigationItems.filter(item => 
     role && item.roles.includes(role)
@@ -86,26 +104,82 @@ export function Navigation({
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-4 bg-gradient-accent rounded-xl p-3 backdrop-blur-sm">
-              <div className="flex items-center space-x-3 text-sm">
-                <div className="relative">
-                  <UserIcon className="h-5 w-5 text-primary" />
-                  <div className="absolute -inset-1 bg-primary opacity-20 blur rounded-full"></div>
+            <div className="relative profile-dropdown-container">
+              <button
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="hidden sm:flex items-center space-x-3 bg-gradient-accent rounded-xl p-3 backdrop-blur-sm hover:bg-gradient-primary transition-all duration-300 group"
+              >
+                <div className="flex items-center space-x-3 text-sm">
+                  <div className="relative">
+                    <UserIcon className="h-5 w-5 text-primary group-hover:text-primary-foreground" />
+                    <div className="absolute -inset-1 bg-primary opacity-20 blur rounded-full"></div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-foreground group-hover:text-primary-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground group-hover:text-primary-foreground/80 capitalize font-medium">{role} access</p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-primary-foreground transition-transform group-hover:rotate-180" />
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-foreground">{user.email}</p>
-                  <p className="text-xs text-muted-foreground capitalize font-medium">{role} access</p>
+              </button>
+
+              {/* Profile Dropdown */}
+              {isProfileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-elegant z-50 backdrop-blur-xl bg-opacity-95">
+                  <div className="p-2">
+                    <div className="px-3 py-2 text-sm text-muted-foreground border-b border-border mb-2">
+                      <p className="font-medium text-foreground">{user.email}</p>
+                      <p className="text-xs capitalize">{role} account</p>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setCurrentPage('account_settings');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-gradient-accent rounded-lg transition-colors"
+                    >
+                      <SettingsIcon className="h-4 w-4" />
+                      <span>Account Settings</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setCurrentPage('change_email');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-gradient-accent rounded-lg transition-colors"
+                    >
+                      <MailIcon className="h-4 w-4" />
+                      <span>Change Email</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setCurrentPage('change_password');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-gradient-accent rounded-lg transition-colors"
+                    >
+                      <KeyIcon className="h-4 w-4" />
+                      <span>Change Password</span>
+                    </button>
+                    
+                    <div className="border-t border-border my-2"></div>
+                    
+                    <button
+                      onClick={() => {
+                        onSignOut();
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      <LogOutIcon className="h-4 w-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            
-            <button
-              onClick={onSignOut}
-              className="btn-outline px-4 py-2 text-sm font-semibold group"
-            >
-              <LogOutIcon className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
 
             {/* Mobile menu button */}
             <button
@@ -157,11 +231,36 @@ export function Navigation({
             
             <div className="mt-6 pt-6 border-t border-border">
               <div className="bg-gradient-card rounded-xl p-4">
-                <div className="text-sm text-muted-foreground mb-2">
+                <div className="text-sm text-muted-foreground mb-4">
                   Signed in as <span className="font-semibold text-foreground">{user.email}</span>
                 </div>
-                <div className="text-xs text-muted-foreground capitalize font-medium">
+                <div className="text-xs text-muted-foreground capitalize font-medium mb-4">
                   {role} access level
+                </div>
+                
+                {/* Mobile profile actions */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setCurrentPage('account_settings');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-gradient-accent rounded-lg transition-colors"
+                  >
+                    <SettingsIcon className="h-4 w-4" />
+                    <span>Account Settings</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      onSignOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  >
+                    <LogOutIcon className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
               </div>
             </div>

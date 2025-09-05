@@ -32,6 +32,9 @@ import { PendingApprovalPage } from './components/auth/PendingApprovalPage';
 import { InventorySearchPage } from './components/inventory/InventorySearchPage';
 import { AdminHistoryPage } from './components/admin/AdminHistoryPage';
 import { UserManagementPage } from './components/admin/UserManagementPage';
+import { AccountSettingsPage } from './components/account/AccountSettingsPage';
+import { ChangeEmailPage } from './components/account/ChangeEmailPage';
+import { ChangePasswordPage } from './components/account/ChangePasswordPage';
 
 const supabase = _supabase as any;
 
@@ -303,6 +306,9 @@ export default function App() {
             {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'user_management' && <UserManagementPage />}
             {currentPage === 'admin_history' && <AdminHistoryPage />}
+            {currentPage === 'account_settings' && <AccountSettingsPage />}
+            {currentPage === 'change_email' && <ChangeEmailPage onBack={() => setCurrentPage('account_settings')} />}
+            {currentPage === 'change_password' && <ChangePasswordPage onBack={() => setCurrentPage('account_settings')} />}
         </AppLayout>
     );
 }
