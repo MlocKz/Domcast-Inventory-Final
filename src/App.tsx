@@ -44,7 +44,7 @@ import {
   FileCheck2 as ApprovalIcon,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import DccaLogo from './DCCA_Logo.png';
+import DccaLogo from './assets/DCCA_Logo.png';
 import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
 
@@ -663,7 +663,7 @@ function NavBar({ currentPage, setCurrentPage, role, onSignOut, isNavOpen, setIs
 // Approval Page for Admins
 function ApprovalPage({ requests, onApprove, onReject }) {
     const sortedRequests = useMemo(() => 
-        [...requests].sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt)), 
+        [...requests].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()), 
         [requests]
     );
 
@@ -1005,7 +1005,7 @@ function LogShipmentPage({ onLogShipment, inventory, allShipments, role }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
     const [isDuplicate, setIsDuplicate] = useState(false); // New state for real-time duplicate check
-    const itemSearchRef = useRef();
+    const itemSearchRef = useRef<HTMLInputElement>(null);
 
     // Check for duplicate shipment ID as the user types
     useEffect(() => {
@@ -1177,7 +1177,7 @@ function LogShipmentPage({ onLogShipment, inventory, allShipments, role }) {
 // Shipment History Page Component
 function ShipmentHistoryPage({ shipments, allShipments, title, type, onDelete, onEdit, role }) {
     const [expandedId, setExpandedId] = useState(null);
-    const sortedShipments = useMemo(() => [...shipments].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)), [shipments]);
+    const sortedShipments = useMemo(() => [...shipments].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()), [shipments]);
     const toggleExpansion = (id) => setExpandedId(expandedId === id ? null : id);
     const canModify = role === 'admin' || role === 'editor';
 
@@ -1218,7 +1218,7 @@ function ShipmentHistoryPage({ shipments, allShipments, title, type, onDelete, o
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium cursor-pointer" onClick={() => toggleExpansion(shipment.id)}>
                                             <div className="flex items-center gap-2">
                                                 {duplicateShipmentIdSet.has(shipment.shipmentId) && (
-                                                    <WarningIcon className="h-5 w-5 text-red-500" title="This shipment ID is used more than once."/>
+                                                    <WarningIcon className="h-5 w-5 text-red-500" />
                                                 )}
                                                 <span>{shipment.shipmentId}</span>
                                             </div>
@@ -1276,7 +1276,7 @@ function ShipmentHistoryPage({ shipments, allShipments, title, type, onDelete, o
 
 // Inventory Table Component
 function InventoryTable({ items, onUpdateItem, itemToEdit, setItemToEdit, role }) {
-    const [editFormData, setEditFormData] = useState({});
+    const [editFormData, setEditFormData] = useState<{itemNo?: string, description?: string, quantity?: number | string}>({});
 
     const handleEditClick = (item) => {
         setItemToEdit(item.id);
@@ -1531,7 +1531,7 @@ function ScanShipmentPage({ onLogShipment, inventory, role }) {
         setError('');
         setRawText('');
         try {
-            const { data } = await Tesseract.recognize(image, 'eng', { logger: m => { if (m.status === 'recognizing text') { setProgress(parseInt(m.progress * 100, 10)); } } });
+            const { data } = await Tesseract.recognize(image, 'eng', { logger: m => { if (m.status === 'recognizing text') { setProgress(Math.round(m.progress * 100)); } } });
             setRawText(data.text);
             const parsedResult = parseOcrData(data);
             const matchedItems = matchItemsWithInventory(parsedResult.items, inventory);
@@ -1675,7 +1675,7 @@ function EditShipmentModal({ shipment, onUpdate, onCancel, inventory }) {
     const [currentQty, setCurrentQty] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [type, setType] = useState(shipment.type);
-    const itemSearchRef = useRef();
+    const itemSearchRef = useRef<HTMLInputElement>(null);
 
     const availableInventory = useMemo(() => inventory.filter(i => !items.some(si => si.itemNo === i.itemNo)), [inventory, items]);
     const filteredItems = useMemo(() => searchTerm ? availableInventory.filter(i => (i.itemNo.toLowerCase().includes(searchTerm.toLowerCase()) || i.description.toLowerCase().includes(searchTerm.toLowerCase()))).slice(0, 20) : [], [searchTerm, availableInventory]);
@@ -1792,7 +1792,7 @@ function EditShipmentModal({ shipment, onUpdate, onCancel, inventory }) {
 function AddItemModal({ onAdd, onCancel, inventory }) {
     const [itemNo, setItemNo] = useState('');
     const [description, setDescription] = useState('');
-    const [quantity, setQuantity] = useState(0);
+    const [quantity, setQuantity] = useState('0');
     const [error, setError] = useState('');
 
     const handleSubmit = (e) => {
@@ -1834,7 +1834,7 @@ function AddItemModal({ onAdd, onCancel, inventory }) {
                                 id="description"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                rows="3"
+                                rows={3}
                                 className="mt-1 block w-full px-3 py-2 bg-[#48484a] border border-[#636267] rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 text-white"
                                 required
                             />
