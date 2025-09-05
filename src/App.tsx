@@ -657,7 +657,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                 </div>
 
                 {/* Add Items Card */}
-                <div className="card p-8 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                <div className="card p-8 animate-scale-in overflow-visible relative z-50" style={{ animationDelay: '0.1s' }}>
                     <div className="flex items-center space-x-3 mb-6">
                         <PlusCircleIcon className="h-6 w-6 text-primary" />
                         <h3 className="text-2xl font-semibold text-foreground">Add Items</h3>
@@ -690,7 +690,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                                     setCurrentItem(item);
                                                     setSearchTerm(`${item.sku} - ${item.name}`);
                                                 }}
-                                                className="p-4 hover:bg-gradient-accent cursor-pointer border-b border-border last:border-b-0 transition-all duration-200 group"
+                                                className="relative z-50 p-4 hover:bg-gradient-accent cursor-pointer border-b border-border last:border-b-0 transition-all duration-200 group"
                                                 style={{ zIndex: 100 }}
                                             >
                                                 <div className="flex justify-between items-center">
