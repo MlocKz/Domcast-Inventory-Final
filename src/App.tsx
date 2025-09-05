@@ -9,7 +9,7 @@ import {
   ArrowUp as OutgoingIcon,
   Trash2 as TrashIcon,
   ChevronDown,
-  AlertTriangle as WarningIcon,
+  AlertTriangle,
   LogOut as LogOutIcon,
   FilePenLine as EditIcon,
   BarChart2 as AnalyticsIcon,
@@ -19,7 +19,8 @@ import {
   Camera as CameraIcon,
   PlusCircle as PlusCircleIcon,
   Download as DownloadIcon,
-  FileCheck2 as ApprovalIcon,
+  FileCheck2,
+  Package as PackageIcon,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import DccaLogo from './assets/DCCA_Logo.png';
@@ -445,7 +446,7 @@ function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
     );
 }
 
-// Simple Log Shipment Page
+// Enhanced Log Shipment Page
 function LogShipmentPage({ onLogShipment, inventory, role }: { 
     onLogShipment: (details: any) => void, 
     inventory: InventoryItem[], 
@@ -457,6 +458,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
     const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
     const [currentQty, setCurrentQty] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [error, setError] = useState('');
 
     const filteredItems = useMemo(() => 
         searchTerm
@@ -470,10 +472,13 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
     const handleAddItem = (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        
         if (!currentItem || !currentQty || Number(currentQty) <= 0) {
-            alert("Please select a valid item and enter a positive quantity.");
+            setError("Please select a valid item and enter a positive quantity.");
             return;
         }
+        
         setShipmentItems([...shipmentItems, { 
             itemNo: currentItem.sku, 
             description: currentItem.name, 
@@ -486,8 +491,15 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!shipmentId.trim() || shipmentItems.length === 0) {
-            alert('Please provide a shipment ID and add at least one item.');
+        setError('');
+        
+        if (!shipmentId.trim()) {
+            setError('Please provide a shipment ID.');
+            return;
+        }
+        
+        if (shipmentItems.length === 0) {
+            setError('Please add at least one item to the shipment.');
             return;
         }
         
@@ -500,50 +512,103 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
         // Reset form
         setShipmentId('');
         setShipmentItems([]);
+        setError('');
     };
 
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Log Shipment</h2>
+        <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="text-center">
+                <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+                    {type === 'incoming' ? 'Log Incoming Shipment' : 'Log Outgoing Shipment'}
+                </h1>
+                <p className="text-muted-foreground text-lg">
+                    {role === 'submitter' ? 'Submit shipment details for admin approval' : 'Record shipment and update inventory'}
+                </p>
+            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Shipment ID
-                        </label>
-                        <input
-                            type="text"
-                            value={shipmentId}
-                            onChange={(e) => setShipmentId(e.target.value)}
-                            className="input"
-                            required
-                        />
+            {/* Error Message */}
+            {error && (
+                <div className="card p-4 border-destructive bg-destructive/10 animate-shake">
+                    <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <p className="text-destructive font-medium">{error}</p>
+                    </div>
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Shipment Details Card */}
+                <div className="card p-8 animate-scale-in">
+                    <div className="flex items-center space-x-3 mb-6">
+                        <ShipmentIcon className="h-6 w-6 text-primary" />
+                        <h3 className="text-2xl font-semibold text-foreground">Shipment Details</h3>
                     </div>
                     
-                    <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Shipment Type
-                        </label>
-                        <select
-                            value={type}
-                            onChange={(e) => setType(e.target.value as 'incoming' | 'outgoing')}
-                            className="input"
-                        >
-                            <option value="incoming">Incoming</option>
-                            <option value="outgoing">Outgoing</option>
-                        </select>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-foreground mb-2">
+                                Shipment ID *
+                            </label>
+                            <input
+                                type="text"
+                                value={shipmentId}
+                                onChange={(e) => setShipmentId(e.target.value)}
+                                className="input text-lg"
+                                placeholder="Enter shipment identifier..."
+                                required
+                            />
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-foreground mb-2">
+                                Shipment Type *
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setType('incoming')}
+                                    className={`flex items-center justify-center space-x-2 p-4 rounded-xl font-semibold transition-all duration-300 ${
+                                        type === 'incoming' 
+                                            ? 'bg-gradient-primary text-primary-foreground shadow-glow' 
+                                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    }`}
+                                >
+                                    <IncomingIcon className="h-5 w-5" />
+                                    <span>Incoming</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setType('outgoing')}
+                                    className={`flex items-center justify-center space-x-2 p-4 rounded-xl font-semibold transition-all duration-300 ${
+                                        type === 'outgoing' 
+                                            ? 'bg-gradient-primary text-primary-foreground shadow-glow' 
+                                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    }`}
+                                >
+                                    <OutgoingIcon className="h-5 w-5" />
+                                    <span>Outgoing</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Add Items Section */}
-                <div className="card p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-foreground">Add Items</h3>
+                {/* Add Items Card */}
+                <div className="card p-8 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                    <div className="flex items-center space-x-3 mb-6">
+                        <PlusCircleIcon className="h-6 w-6 text-primary" />
+                        <h3 className="text-2xl font-semibold text-foreground">Add Items</h3>
+                    </div>
                     
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-muted-foreground mb-1">Search for Item</label>
+                    <div className="space-y-6">
+                        {/* Item Search */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-foreground mb-2">
+                                Search Inventory
+                            </label>
                             <div className="relative">
+                                <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="text"
                                     value={searchTerm}
@@ -551,22 +616,38 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                         setSearchTerm(e.target.value);
                                         setCurrentItem(null);
                                     }}
-                                    placeholder="Start typing Item No. or Description..."
-                                    className="input"
+                                    placeholder="Start typing SKU or description..."
+                                    className="input pl-12 text-lg"
                                 />
                                 {filteredItems.length > 0 && !currentItem && (
-                                    <ul className="absolute z-10 w-full bg-card border border-border mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
-                                        {filteredItems.map(item => (
+                                    <ul className="absolute z-20 w-full bg-card border border-border mt-2 rounded-xl shadow-elegant max-h-80 overflow-auto">
+                                        {filteredItems.map((item, index) => (
                                             <li
                                                 key={item.sku}
                                                 onClick={() => {
                                                     setCurrentItem(item);
                                                     setSearchTerm(`${item.sku} - ${item.name}`);
                                                 }}
-                                                className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center"
+                                                className="p-4 hover:bg-gradient-accent cursor-pointer border-b border-border last:border-b-0 transition-all duration-200 group"
                                             >
-                                                <span className="text-foreground">{item.sku} - {item.name}</span>
-                                                <span className="text-muted-foreground text-sm">Qty: {item.qty_on_hand}</span>
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <span className="font-mono font-bold text-foreground group-hover:text-primary transition-colors">
+                                                            {item.sku}
+                                                        </span>
+                                                        <p className="text-sm text-muted-foreground mt-1">{item.name}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className={`font-bold text-lg ${
+                                                            item.qty_on_hand === 0 ? 'text-destructive' :
+                                                            item.qty_on_hand < 10 ? 'text-status-low' : 
+                                                            item.qty_on_hand < 50 ? 'text-warning' : 'text-status-high'
+                                                        }`}>
+                                                            {item.qty_on_hand}
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">in stock</p>
+                                                    </div>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>
@@ -574,59 +655,116 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                             </div>
                         </div>
 
+                        {/* Selected Item & Quantity */}
                         {currentItem && (
-                            <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">Quantity</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={currentQty}
-                                    onChange={(e) => setCurrentQty(e.target.value)}
-                                    className="w-32 input"
-                                    placeholder="0"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddItem}
-                                    className="ml-4 btn-primary"
-                                >
-                                    Add Item
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Items List */}
-                    {shipmentItems.length > 0 && (
-                        <div className="mt-6">
-                            <h4 className="text-md font-semibold mb-2 text-foreground">Items to Ship:</h4>
-                            <div className="space-y-2">
-                                {shipmentItems.map((item, index) => (
-                                    <div key={index} className="flex items-center justify-between bg-secondary p-3 rounded-md">
-                                        <span className="text-foreground">{item.itemNo} - {item.description}</span>
-                                        <div className="flex items-center space-x-4">
-                                            <span className="text-muted-foreground">Qty: {item.quantity}</span>
+                            <div className="bg-gradient-accent p-6 rounded-xl border-l-4 border-primary animate-fade-in">
+                                <div className="flex flex-col md:flex-row md:items-end gap-6">
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-foreground mb-2">Selected Item</h4>
+                                        <div className="bg-card p-4 rounded-lg">
+                                            <p className="font-mono font-bold text-lg text-foreground">{currentItem.sku}</p>
+                                            <p className="text-muted-foreground">{currentItem.name}</p>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Available: <span className="font-semibold">{currentItem.qty_on_hand}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-semibold text-foreground">
+                                            Quantity *
+                                        </label>
+                                        <div className="flex space-x-3">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={type === 'outgoing' ? currentItem.qty_on_hand : undefined}
+                                                value={currentQty}
+                                                onChange={(e) => setCurrentQty(e.target.value)}
+                                                className="w-32 input text-center text-lg font-bold"
+                                                placeholder="0"
+                                            />
                                             <button
                                                 type="button"
-                                                onClick={() => setShipmentItems(shipmentItems.filter((_, i) => i !== index))}
-                                                className="text-destructive hover:text-destructive/80 transition-colors"
+                                                onClick={handleAddItem}
+                                                className="btn-primary px-6 whitespace-nowrap"
                                             >
-                                                <TrashIcon className="h-4 w-4" />
+                                                <PlusCircleIcon className="h-4 w-4 mr-2" />
+                                                Add Item
                                             </button>
                                         </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
-                <button
-                    type="submit"
-                    className="w-full btn-primary text-lg py-4"
-                >
-                    {role === 'submitter' ? 'Submit for Approval' : 'Log Shipment'}
-                </button>
+                {/* Items List */}
+                {shipmentItems.length > 0 && (
+                    <div className="card p-8 animate-scale-in" style={{ animationDelay: '0.2s' }}>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                <PackageIcon className="h-6 w-6 text-primary" />
+                                <h3 className="text-2xl font-semibold text-foreground">Items to {type === 'incoming' ? 'Receive' : 'Ship'}</h3>
+                            </div>
+                            <span className="text-sm font-semibold text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+                                {shipmentItems.length} {shipmentItems.length === 1 ? 'item' : 'items'}
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            {shipmentItems.map((item, index) => (
+                                <div key={index} className="flex items-center justify-between bg-gradient-accent p-4 rounded-xl hover:shadow-md transition-all duration-200 group">
+                                    <div className="flex-1">
+                                        <div className="font-mono font-bold text-foreground group-hover:text-primary transition-colors">
+                                            {item.itemNo}
+                                        </div>
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            {item.description}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="text-right">
+                                            <div className="font-bold text-lg text-foreground">
+                                                {item.quantity.toLocaleString()}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">quantity</div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShipmentItems(shipmentItems.filter((_, i) => i !== index))}
+                                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200"
+                                        >
+                                            <TrashIcon className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Submit Button */}
+                <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                    <button
+                        type="submit"
+                        disabled={shipmentItems.length === 0 || !shipmentId.trim()}
+                        className="w-full btn-primary text-xl py-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-elegant"
+                    >
+                        <div className="flex items-center justify-center space-x-3">
+                            {role === 'submitter' ? (
+                                <>
+                                    <FileCheck2 className="h-6 w-6" />
+                                    <span>Submit for Approval</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ShipmentIcon className="h-6 w-6" />
+                                    <span>Log Shipment</span>
+                                </>
+                            )}
+                        </div>
+                    </button>
+                </div>
             </form>
         </div>
     );
