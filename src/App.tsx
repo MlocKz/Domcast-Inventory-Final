@@ -73,20 +73,26 @@ export default function App() {
 
             if (error) {
                 console.error('Error fetching user profile:', error);
-                setAuthError(true);
+                // Don't set auth error - just use default role
+                setUser({ id: userId, email: '', role: 'submitter' } as any);
+                setUserRole('submitter');
                 return;
             }
 
             if (data) {
                 setUser(data as any);
-                setUserRole((data as any).role ?? null);
+                setUserRole((data as any).role ?? 'submitter');
             } else {
-                setUser(null);
-                setUserRole(null);
+                // Profile doesn't exist yet - create a default one
+                console.log('Profile not found, using default submitter role');
+                setUser({ id: userId, email: '', role: 'submitter' } as any);
+                setUserRole('submitter');
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
-            setAuthError(true);
+            // Fallback to default role rather than blocking login
+            setUser({ id: userId, email: '', role: 'submitter' } as any);
+            setUserRole('submitter');
         } finally {
             setIsLoading(false);
         }
@@ -149,8 +155,12 @@ function LoginScreen() {
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        emailRedirectTo: `${window.location.origin}/`
+                    }
                 });
                 if (error) throw error;
+                setError('Check your email for the confirmation link!');
             } catch (err: any) {
                 setError(err.message);
             }
