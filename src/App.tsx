@@ -835,49 +835,96 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
 // Simple Shipment History Page
 function ShipmentHistoryPage({ shipments, title }: { shipments: Shipment[], title: string }) {
+    const [expandedShipments, setExpandedShipments] = useState<Set<string>>(new Set());
+
+    const toggleShipment = (shipmentId: string) => {
+        const newExpanded = new Set(expandedShipments);
+        if (newExpanded.has(shipmentId)) {
+            newExpanded.delete(shipmentId);
+        } else {
+            newExpanded.add(shipmentId);
+        }
+        setExpandedShipments(newExpanded);
+    };
+
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-foreground">{title}</h2>
             
-            <div className="card overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                        <thead className="bg-secondary">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Shipment ID
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Items
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    User
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-card divide-y divide-border">
-                            {shipments.map((shipment) => (
-                                <tr key={shipment.id} className="hover:bg-secondary transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                        {new Date(shipment.timestamp).toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                                        {shipment.shipment_id}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                                        {shipment.items.length} item(s)
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                        {shipment.user_email}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="space-y-4">
+                {shipments.length === 0 ? (
+                    <div className="text-center py-12 card">
+                        <p className="text-muted-foreground">No shipments found.</p>
+                    </div>
+                ) : (
+                    shipments.map((shipment) => (
+                        <div key={shipment.id} className="card overflow-hidden">
+                            <button
+                                onClick={() => toggleShipment(shipment.id)}
+                                className="w-full px-6 py-4 text-left hover:bg-secondary/50 transition-colors flex items-center justify-between"
+                            >
+                                <div className="flex items-center space-x-6">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-foreground">
+                                            {shipment.shipment_id}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {new Date(shipment.timestamp).toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {shipment.items.length} item(s) • {shipment.user_email}
+                                    </div>
+                                </div>
+                                <div className={`transform transition-transform duration-200 ${expandedShipments.has(shipment.id) ? 'rotate-180' : ''}`}>
+                                    <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </button>
+                            
+                            {expandedShipments.has(shipment.id) && (
+                                <div className="px-6 pb-4 border-t border-border animate-accordion-down">
+                                    <div className="pt-4 space-y-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <h4 className="text-sm font-medium text-foreground mb-1">Type:</h4>
+                                                <p className="text-sm text-muted-foreground capitalize">{shipment.type}</p>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-medium text-foreground mb-1">User:</h4>
+                                                <p className="text-sm text-muted-foreground">{shipment.user_email}</p>
+                                            </div>
+                                            {shipment.approved_by && (
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-foreground mb-1">Approved By:</h4>
+                                                    <p className="text-sm text-muted-foreground">{shipment.approved_by}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 className="text-sm font-medium text-foreground mb-2">Items:</h4>
+                                            <div className="space-y-2">
+                                                {shipment.items.map((item, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium text-foreground">{item.itemNo}</p>
+                                                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-sm font-medium text-foreground">Qty: {item.quantity}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
