@@ -36,6 +36,7 @@ export interface User {
   id: string
   email: string
   role: 'admin' | 'editor' | 'submitter'
+  status: 'pending' | 'approved' | 'rejected'
   created_at: string
 }
 

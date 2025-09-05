@@ -7,7 +7,8 @@ import {
   LogOut as LogOutIcon,
   Menu as MenuIcon,
   X as XIcon,
-  User as UserIcon
+  User as UserIcon,
+  Users as UsersIcon
 } from 'lucide-react';
 import DccaLogo from '../../assets/DCCA_Logo.png';
 import { User } from '../../lib/supabase';
@@ -25,6 +26,7 @@ const navigationItems = [
   { id: 'log_shipment', label: 'Log Shipment', icon: ShipmentIcon, roles: ['admin', 'editor', 'submitter'] },
   { id: 'incoming', label: 'Incoming', icon: IncomingIcon, roles: ['admin', 'editor'] },
   { id: 'outgoing', label: 'Outgoing', icon: OutgoingIcon, roles: ['admin', 'editor'] },
+  { id: 'user_management', label: 'User Management', icon: UsersIcon, roles: ['admin'] },
   { id: 'admin_history', label: 'Change History', icon: UserIcon, roles: ['admin'] },
 ];
 

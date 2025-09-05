@@ -28,8 +28,10 @@ import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { PendingApprovalPage } from './components/auth/PendingApprovalPage';
 import { InventorySearchPage } from './components/inventory/InventorySearchPage';
 import { AdminHistoryPage } from './components/admin/AdminHistoryPage';
+import { UserManagementPage } from './components/admin/UserManagementPage';
 
 const supabase = _supabase as any;
 
@@ -112,7 +114,7 @@ export default function App() {
             } else {
                 // Profile doesn't exist yet - create a default one
                 console.log('Profile not found, using default submitter role');
-                setUser({ id: userId, email: '', role: 'submitter' } as any);
+                setUser({ id: userId, email: '', role: 'submitter', status: 'pending' } as any);
                 setUserRole('submitter');
             }
         } catch (error) {
@@ -262,6 +264,29 @@ export default function App() {
         return <LoginScreen />;
     }
 
+    // Check if user is pending approval
+    if (user.status === 'pending') {
+        return <PendingApprovalPage userEmail={user.email} onSignOut={handleSignOut} />;
+    }
+
+    // Check if user is rejected
+    if (user.status === 'rejected') {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-center p-8 border border-border rounded-lg bg-card shadow-lg">
+                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+                    <p className="mb-4">Your account has been suspended.</p>
+                    <button
+                        onClick={handleSignOut}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+                    >
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <AppLayout
             user={user}
@@ -276,6 +301,7 @@ export default function App() {
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
             {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+            {currentPage === 'user_management' && <UserManagementPage />}
             {currentPage === 'admin_history' && <AdminHistoryPage />}
         </AppLayout>
     );
