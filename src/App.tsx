@@ -370,23 +370,23 @@ function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
 
             <div className="card p-6">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full">
+                    <table className="min-w-full text-sm">
                         <thead>
                             <tr className="border-b border-border">
-                                <th className="text-left py-3 px-4 font-semibold">Item No</th>
-                                <th className="text-left py-3 px-4 font-semibold">Description</th>
-                                <th className="text-left py-3 px-4 font-semibold">Quantity</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">Item No</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">Description</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">Quantity</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredInventory.map((item) => (
                                 <tr key={item.id} className="border-b border-border hover:bg-muted/50">
-                                    <td className="py-3 px-4 font-mono text-sm">{item.item_no}</td>
-                                    <td className="py-3 px-4">{item.description}</td>
+                                    <td className="py-3 px-4 font-mono text-sm text-foreground">{item.item_no}</td>
+                                    <td className="py-3 px-4 text-foreground">{item.description}</td>
                                     <td className="py-3 px-4">
                                         <span className={`font-semibold ${
-                                            item.quantity < 10 ? 'text-destructive' : 
-                                            item.quantity < 50 ? 'text-warning' : 'text-foreground'
+                                            item.quantity < 10 ? 'text-red-500' : 
+                                            item.quantity < 50 ? 'text-yellow-500' : 'text-green-500'
                                         }`}>
                                             {item.quantity}
                                         </span>

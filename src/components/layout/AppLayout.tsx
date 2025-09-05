@@ -27,7 +27,7 @@ export function AppLayout({
   shipmentRequestsCount = 0
 }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-background dark">
+    <div className="min-h-screen bg-background text-foreground dark">
       <Navigation
         user={user}
         role={role}
