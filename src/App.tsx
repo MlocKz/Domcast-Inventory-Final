@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase as _supabase } from '@/integrations/supabase/client';
-import type { User, InventoryItem, Shipment, ShipmentRequest } from './lib/supabase';
+import type { User, InventoryItem, Shipment } from './lib/supabase';
 import {
   PackageSearch as InventoryIcon,
   PackageCheck as ShipmentIcon,
@@ -43,7 +43,6 @@ export default function App() {
     const [currentPage, setCurrentPage] = useState('inventory');
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [shipments, setShipments] = useState<Shipment[]>([]);
-    const [shipmentRequests, setShipmentRequests] = useState<ShipmentRequest[]>([]);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
     useEffect(() => {
@@ -145,17 +144,6 @@ export default function App() {
 
             if (shipmentsError) throw shipmentsError;
             setShipments(shipmentsData || []);
-
-            // Load shipment requests (for admins)
-            if (userRole === 'admin') {
-                const { data: requestsData, error: requestsError } = await supabase
-                    .from('shipment_requests')
-                    .select('*')
-                    .order('requested_at', { ascending: false });
-
-                if (requestsError) throw requestsError;
-                setShipmentRequests(requestsData || []);
-            }
         } catch (error) {
             console.error('Error loading data:', error);
             setNotification({ show: true, message: 'Error loading data', type: 'error' });
@@ -167,30 +155,7 @@ export default function App() {
     const handleLogShipment = async (shipmentDetails: any) => {
         const { items, shipmentId, type } = shipmentDetails;
         
-        if (userRole === 'submitter') {
-            try {
-                const { error } = await supabase
-                    .from('shipment_requests')
-                    .insert({
-                        shipment_id: shipmentId,
-                        type,
-                        items,
-                        requestor_id: user!.id,
-                        requestor_email: user!.email,
-                        status: 'pending'
-                    });
-
-                if (error) throw error;
-                setNotification({ show: true, message: 'Shipment submitted for approval.', type: 'success' });
-                loadData();
-            } catch (error: any) {
-                console.error("Failed to submit for approval:", error);
-                setNotification({ show: true, message: `Submission failed: ${error.message}`, type: 'error' });
-            }
-            return;
-        }
-
-        // For admins/editors - directly process shipment
+        // All users now directly process shipments
         try {
             const { error } = await supabase
                 .from('shipments')
@@ -206,7 +171,7 @@ export default function App() {
 
             // Update inventory quantities
             for (const item of items) {
-                const inventoryItem = inventory.find(i => i.sku === item.itemNo);
+                const inventoryItem = inventory.find((i: InventoryItem) => i.sku === item.itemNo);
                 if (inventoryItem) {
                     const newQuantity = inventoryItem.qty_on_hand + (type === 'incoming' ? item.quantity : -item.quantity);
                     await supabase
@@ -221,66 +186,6 @@ export default function App() {
         } catch (error: any) {
             console.error("Transaction failed: ", error);
             setNotification({ show: true, message: `Failed to log shipment: ${error.message}`, type: 'error' });
-        }
-    };
-
-    const handleApproveShipment = async (request: ShipmentRequest) => {
-        try {
-            // Create shipment
-            const { error: shipmentError } = await supabase
-                .from('shipments')
-                .insert({
-                    shipment_id: request.shipment_id,
-                    type: request.type,
-                    items: request.items,
-                    user_id: request.requestor_id,
-                    user_email: request.requestor_email,
-                    approved_by: user!.email
-                });
-
-            if (shipmentError) throw shipmentError;
-
-            // Update inventory quantities
-            for (const item of request.items) {
-                const inventoryItem = inventory.find(i => i.sku === item.itemNo);
-                if (inventoryItem) {
-                    const newQuantity = inventoryItem.qty_on_hand + (request.type === 'incoming' ? item.quantity : -item.quantity);
-                    await supabase
-                        .from('inventory')
-                        .update({ qty_on_hand: newQuantity })
-                        .eq('sku', inventoryItem.sku);
-                }
-            }
-
-            // Remove request
-            const { error: deleteError } = await supabase
-                .from('shipment_requests')
-                .delete()
-                .eq('id', request.id);
-
-            if (deleteError) throw deleteError;
-
-            setNotification({ show: true, message: 'Shipment approved and inventory updated.', type: 'success' });
-            loadData();
-        } catch (error: any) {
-            console.error("Approval failed:", error);
-            setNotification({ show: true, message: `Approval failed: ${error.message}`, type: 'error' });
-        }
-    };
-
-    const handleRejectShipment = async (requestId: string) => {
-        try {
-            const { error } = await supabase
-                .from('shipment_requests')
-                .delete()
-                .eq('id', requestId);
-
-            if (error) throw error;
-            setNotification({ show: true, message: 'Shipment request rejected.', type: 'success' });
-            loadData();
-        } catch (error: any) {
-            console.error("Rejection failed:", error);
-            setNotification({ show: true, message: 'Failed to reject shipment.', type: 'error' });
         }
     };
 
@@ -365,19 +270,11 @@ export default function App() {
             onSignOut={handleSignOut}
             notification={notification}
             setNotification={setNotification}
-            shipmentRequestsCount={shipmentRequests.length}
         >
             {currentPage === 'inventory' && <InventorySearchPage />}
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
             {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
-            {currentPage === 'approval' && userRole === 'admin' && (
-                <ApprovalPage 
-                    requests={shipmentRequests} 
-                    onApprove={handleApproveShipment} 
-                    onReject={handleRejectShipment} 
-                />
-            )}
         </AppLayout>
     );
 }
@@ -603,7 +500,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                     {type === 'incoming' ? 'Log Incoming Shipment' : 'Log Outgoing Shipment'}
                 </h1>
                 <p className="text-muted-foreground text-lg">
-                    {role === 'submitter' ? 'Submit shipment details for admin approval' : 'Record shipment and update inventory'}
+                    Record shipment and update inventory
                 </p>
             </div>
             
@@ -855,17 +752,8 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                         className="w-full btn-primary text-xl py-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-elegant"
                     >
                         <div className="flex items-center justify-center space-x-3">
-                            {role === 'submitter' ? (
-                                <>
-                                    <FileCheck2 className="h-6 w-6" />
-                                    <span>Submit for Approval</span>
-                                </>
-                            ) : (
-                                <>
-                                    <ShipmentIcon className="h-6 w-6" />
-                                    <span>Log Shipment</span>
-                                </>
-                            )}
+                            <ShipmentIcon className="h-6 w-6" />
+                            <span>Log Shipment</span>
                         </div>
                     </button>
                 </div>
@@ -1098,69 +986,6 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// Simple Approval Page
-function ApprovalPage({ requests, onApprove, onReject }: { 
-    requests: ShipmentRequest[], 
-    onApprove: (request: ShipmentRequest) => void, 
-    onReject: (id: string) => void 
-}) {
-    return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-foreground">Pending Approvals</h2>
-            
-            {requests.length === 0 ? (
-                <div className="text-center py-12 card">
-                    <p className="text-muted-foreground">No pending approval requests.</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {requests.map((request) => (
-                        <div key={request.id} className="card p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-foreground">
-                                        Shipment ID: {request.shipment_id}
-                                    </h3>
-                                    <p className="text-muted-foreground">
-                                        Type: {request.type} | Requested by: {request.requestor_email}
-                                    </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        {new Date(request.requested_at).toLocaleString()}
-                                    </p>
-                                </div>
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={() => onApprove(request)}
-                                        className="btn-primary bg-status-high hover:bg-status-high/90"
-                                    >
-                                        Approve
-                                    </button>
-                                    <button
-                                        onClick={() => onReject(request.id)}
-                                        className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors font-semibold"
-                                    >
-                                        Reject
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="border-t border-border pt-4">
-                                <h4 className="text-md font-medium text-foreground mb-2">Items:</h4>
-                                <div className="space-y-1">
-                                    {request.items.map((item, index) => (
-                                        <div key={index} className="text-muted-foreground text-sm">
-                                            {item.itemNo} - {item.description} (Qty: {item.quantity})
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
                 </div>
             )}
         </div>

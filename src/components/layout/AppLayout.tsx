@@ -12,7 +12,6 @@ interface AppLayoutProps {
   notification: { show: boolean; message: string; type: string };
   setNotification: (notification: { show: boolean; message: string; type: string }) => void;
   children: React.ReactNode;
-  shipmentRequestsCount?: number;
 }
 
 export function AppLayout({
@@ -23,8 +22,7 @@ export function AppLayout({
   onSignOut,
   notification,
   setNotification,
-  children,
-  shipmentRequestsCount = 0
+  children
 }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-gradient-card text-foreground">
@@ -34,7 +32,6 @@ export function AppLayout({
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         onSignOut={onSignOut}
-        shipmentRequestsCount={shipmentRequestsCount}
       />
       
       <main className="container mx-auto px-6 py-12">

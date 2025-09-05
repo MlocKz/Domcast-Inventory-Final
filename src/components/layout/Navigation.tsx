@@ -4,7 +4,6 @@ import {
   PackageCheck as ShipmentIcon,
   ArrowDown as IncomingIcon,
   ArrowUp as OutgoingIcon,
-  FileCheck2 as ApprovalIcon,
   LogOut as LogOutIcon,
   Menu as MenuIcon,
   X as XIcon,
@@ -19,7 +18,6 @@ interface NavigationProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   onSignOut: () => void;
-  shipmentRequestsCount: number;
 }
 
 const navigationItems = [
@@ -27,7 +25,6 @@ const navigationItems = [
   { id: 'log_shipment', label: 'Log Shipment', icon: ShipmentIcon, roles: ['admin', 'editor', 'submitter'] },
   { id: 'incoming', label: 'Incoming', icon: IncomingIcon, roles: ['admin', 'editor'] },
   { id: 'outgoing', label: 'Outgoing', icon: OutgoingIcon, roles: ['admin', 'editor'] },
-  { id: 'approval', label: 'Approval', icon: ApprovalIcon, roles: ['admin'] },
 ];
 
 export function Navigation({
@@ -35,8 +32,7 @@ export function Navigation({
   role,
   currentPage,
   setCurrentPage,
-  onSignOut,
-  shipmentRequestsCount
+  onSignOut
 }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -77,11 +73,6 @@ export function Navigation({
                 >
                   <Icon className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
                   <span className="flex-shrink-0">{item.label}</span>
-                  {item.id === 'approval' && shipmentRequestsCount > 0 && (
-                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-1 ml-2 animate-glow-pulse flex-shrink-0 font-bold">
-                      {shipmentRequestsCount}
-                    </span>
-                  )}
                   {isActive && (
                     <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white rounded-full opacity-80"></div>
                   )}
@@ -156,11 +147,6 @@ export function Navigation({
                   >
                     <Icon className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
                     <span className="flex-shrink-0">{item.label}</span>
-                    {item.id === 'approval' && shipmentRequestsCount > 0 && (
-                      <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-3 py-1 ml-auto flex-shrink-0 font-bold animate-bounce-gentle">
-                        {shipmentRequestsCount}
-                      </span>
-                    )}
                   </button>
                 );
               })}
