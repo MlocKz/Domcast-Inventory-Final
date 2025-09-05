@@ -22,6 +22,14 @@ export function InventorySearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    qty_on_hand: 0,
+    unit_cost: '',
+    sell_price: '',
+    location: '',
+    notes: ''
+  });
 
   useEffect(() => {
     loadInventory();
@@ -45,6 +53,53 @@ export function InventorySearchPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const startEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+    setEditFormData({
+      qty_on_hand: item.qty_on_hand,
+      unit_cost: item.unit_cost?.toString() || '',
+      sell_price: item.sell_price?.toString() || '',
+      location: item.location || '',
+      notes: item.notes || ''
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+    
+    try {
+      const { error } = await supabase
+        .from('inventory')
+        .update({
+          qty_on_hand: editFormData.qty_on_hand,
+          unit_cost: editFormData.unit_cost ? parseFloat(editFormData.unit_cost) : null,
+          sell_price: editFormData.sell_price ? parseFloat(editFormData.sell_price) : null,
+          location: editFormData.location || null,
+          notes: editFormData.notes || null
+        })
+        .eq('sku', editingItem.sku);
+
+      if (error) throw error;
+      
+      setEditingItem(null);
+      loadInventory(); // Reload to get updated data
+    } catch (err: any) {
+      console.error('Error updating inventory:', err);
+      setError(err.message || 'Failed to update inventory');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingItem(null);
+    setEditFormData({
+      qty_on_hand: 0,
+      unit_cost: '',
+      sell_price: '',
+      location: '',
+      notes: ''
+    });
   };
 
   const filteredInventory = useMemo(() => {
@@ -175,6 +230,7 @@ export function InventorySearchPage() {
                 <th className="text-left py-6 px-6 font-bold text-foreground text-lg">Product Code</th>
                 <th className="text-left py-6 px-6 font-bold text-foreground text-lg">Description</th>
                 <th className="text-center py-6 px-6 font-bold text-foreground text-lg">Stock Level</th>
+                <th className="text-center py-6 px-6 font-bold text-foreground text-lg">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -213,6 +269,14 @@ export function InventorySearchPage() {
                       </div>
                     </div>
                   </td>
+                  <td className="py-6 px-6 text-center">
+                    <button
+                      onClick={() => startEdit(item)}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -239,6 +303,102 @@ export function InventorySearchPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Inventory Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-xl border border-border max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-foreground mb-4">
+              Edit Inventory: {editingItem.sku}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Quantity on Hand
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editFormData.qty_on_hand}
+                  onChange={(e) => setEditFormData({ ...editFormData, qty_on_hand: parseInt(e.target.value) || 0 })}
+                  className="input w-full"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Unit Cost
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editFormData.unit_cost}
+                  onChange={(e) => setEditFormData({ ...editFormData, unit_cost: e.target.value })}
+                  className="input w-full"
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Sell Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editFormData.sell_price}
+                  onChange={(e) => setEditFormData({ ...editFormData, sell_price: e.target.value })}
+                  className="input w-full"
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.location}
+                  onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                  className="input w-full"
+                  placeholder="Warehouse location"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  className="input w-full h-20 resize-none"
+                  placeholder="Additional notes..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={cancelEdit}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

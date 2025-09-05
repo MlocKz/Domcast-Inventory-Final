@@ -284,6 +284,47 @@ export default function App() {
         }
     };
 
+    // Update shipment function
+    const updateShipment = async (updatedShipment: Shipment) => {
+        try {
+            const { error } = await supabase
+                .from('shipments')
+                .update({
+                    shipment_id: updatedShipment.shipment_id,
+                    items: updatedShipment.items
+                })
+                .eq('id', updatedShipment.id);
+
+            if (error) throw error;
+            
+            // Reload shipments
+            loadData();
+            setNotification({ show: true, message: 'Shipment updated successfully', type: 'success' });
+        } catch (error: any) {
+            console.error('Error updating shipment:', error);
+            setNotification({ show: true, message: `Failed to update shipment: ${error.message}`, type: 'error' });
+        }
+    };
+
+    // Delete shipment function
+    const deleteShipment = async (shipmentId: string) => {
+        try {
+            const { error } = await supabase
+                .from('shipments')
+                .delete()
+                .eq('id', shipmentId);
+
+            if (error) throw error;
+            
+            // Reload shipments
+            loadData();
+            setNotification({ show: true, message: 'Shipment deleted successfully', type: 'success' });
+        } catch (error: any) {
+            console.error('Error deleting shipment:', error);
+            setNotification({ show: true, message: `Failed to delete shipment: ${error.message}`, type: 'error' });
+        }
+    };
+
     const incomingShipments = shipments.filter(s => s.type === 'incoming');
     const outgoingShipments = shipments.filter(s => s.type === 'outgoing');
 
@@ -328,8 +369,8 @@ export default function App() {
         >
             {currentPage === 'inventory' && <InventorySearchPage />}
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
-            {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" />}
-            {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" />}
+            {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+            {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'approval' && userRole === 'admin' && (
                 <ApprovalPage 
                     requests={shipmentRequests} 
