@@ -34,13 +34,13 @@ export function Notification({ notification, setNotification }: NotificationProp
   const getStyles = () => {
     switch (notification.type) {
       case 'success':
-        return 'bg-green-500 text-white border-green-600';
+        return 'bg-success text-success-foreground border-success';
       case 'error':
-        return 'bg-red-500 text-white border-red-600';
+        return 'bg-destructive text-destructive-foreground border-destructive';
       case 'warning':
-        return 'bg-yellow-500 text-white border-yellow-600';
+        return 'bg-warning text-warning-foreground border-warning';
       default:
-        return 'bg-blue-500 text-white border-blue-600';
+        return 'bg-info text-info-foreground border-info';
     }
   };
 
@@ -60,7 +60,7 @@ export function Notification({ notification, setNotification }: NotificationProp
         </div>
         <button
           onClick={() => setNotification({ ...notification, show: false })}
-          className="flex-shrink-0 ml-4 text-white hover:text-gray-200 transition-colors"
+          className="flex-shrink-0 ml-4 hover:opacity-80 transition-opacity"
         >
           <XIcon className="h-4 w-4" />
         </button>
