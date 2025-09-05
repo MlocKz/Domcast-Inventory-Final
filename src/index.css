@@ -20,14 +20,24 @@
     --muted-foreground: 240 5% 64.9%;
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
+    --info: 210 100% 60%;
+    --info-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 210 100% 60%;
     --radius: 0.75rem;
+    
+    /* Status Colors */
+    --status-low: 38 92% 50%;
+    --status-medium: 210 100% 60%;
+    --status-high: 142 76% 36%;
+    --status-critical: 0 84% 60%;
     
     /* Professional Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(210 100% 60%), hsl(210 100% 70%));
@@ -59,11 +69,11 @@
     --secondary: 210 40% 96%;
     --secondary-foreground: 240 10% 3.9%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 47%;
     --accent: 210 40% 96%;
     --accent-foreground: 240 10% 3.9%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 96%));
     --gradient-accent: linear-gradient(90deg, hsl(210 100% 50% / 0.05), hsl(210 100% 60% / 0.02));
   }

@@ -39,6 +39,11 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        info: "hsl(var(--info))",
+        "status-low": "hsl(var(--status-low))",
+        "status-medium": "hsl(var(--status-medium))",  
+        "status-high": "hsl(var(--status-high))",
+        "status-critical": "hsl(var(--status-critical))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

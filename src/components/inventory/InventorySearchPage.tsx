@@ -133,8 +133,8 @@ export function InventorySearchPage() {
               <div className="flex flex-col items-end">
                 <div className={`text-2xl font-extrabold transition-all duration-300 ${
                   item.qty_on_hand === 0 ? 'text-destructive animate-glow-pulse' :
-                  item.qty_on_hand < 10 ? 'text-orange-500' : 
-                  item.qty_on_hand < 50 ? 'text-warning' : 'text-success'
+                  item.qty_on_hand < 10 ? 'text-status-low' : 
+                  item.qty_on_hand < 50 ? 'text-warning' : 'text-status-high'
                 }`}>
                   {item.qty_on_hand.toLocaleString()}
                 </div>
@@ -198,15 +198,15 @@ export function InventorySearchPage() {
                     <div className="flex flex-col items-center space-y-2">
                       <div className={`text-2xl font-bold transition-all duration-300 ${
                         item.qty_on_hand === 0 ? 'text-destructive animate-glow-pulse' :
-                        item.qty_on_hand < 10 ? 'text-orange-500' : 
-                        item.qty_on_hand < 50 ? 'text-warning' : 'text-success'
+                        item.qty_on_hand < 10 ? 'text-status-low' : 
+                        item.qty_on_hand < 50 ? 'text-warning' : 'text-status-high'
                       }`}>
                         {item.qty_on_hand.toLocaleString()}
                       </div>
                       <div className={`text-xs font-semibold px-3 py-1 rounded-full ${
                         item.qty_on_hand === 0 ? 'bg-destructive/20 text-destructive' :
-                        item.qty_on_hand < 10 ? 'bg-orange-500/20 text-orange-500' : 
-                        item.qty_on_hand < 50 ? 'bg-warning/20 text-warning' : 'bg-success/20 text-success'
+                        item.qty_on_hand < 10 ? 'bg-status-low/20 text-status-low' : 
+                        item.qty_on_hand < 50 ? 'bg-warning/20 text-warning' : 'bg-status-high/20 text-status-high'
                       }`}>
                         {item.qty_on_hand === 0 ? 'Out of Stock' :
                          item.qty_on_hand < 10 ? 'Low Stock' : 'In Stock'}

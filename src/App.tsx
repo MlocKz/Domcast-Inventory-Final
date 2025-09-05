@@ -509,26 +509,26 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-[#8f8e94] mb-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                             Shipment ID
                         </label>
                         <input
                             type="text"
                             value={shipmentId}
                             onChange={(e) => setShipmentId(e.target.value)}
-                            className="w-full px-3 py-2 bg-[#3a3a3c] border border-[#48484a] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="input"
                             required
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-[#8f8e94] mb-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                             Shipment Type
                         </label>
                         <select
                             value={type}
                             onChange={(e) => setType(e.target.value as 'incoming' | 'outgoing')}
-                            className="w-full px-3 py-2 bg-[#3a3a3c] border border-[#48484a] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="input"
                         >
                             <option value="incoming">Incoming</option>
                             <option value="outgoing">Outgoing</option>
@@ -537,12 +537,12 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                 </div>
 
                 {/* Add Items Section */}
-                <div className="bg-[#3a3a3c] p-6 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-4">Add Items</h3>
+                <div className="card p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-foreground">Add Items</h3>
                     
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-[#8f8e94] mb-1">Search for Item</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Search for Item</label>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -552,10 +552,10 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                         setCurrentItem(null);
                                     }}
                                     placeholder="Start typing Item No. or Description..."
-                                    className="w-full p-2 bg-[#48484a] border border-[#636267] rounded-md text-white"
+                                    className="input"
                                 />
                                 {filteredItems.length > 0 && !currentItem && (
-                                    <ul className="absolute z-10 w-full bg-[#48484a] border border-[#636267] mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
+                                    <ul className="absolute z-10 w-full bg-card border border-border mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
                                         {filteredItems.map(item => (
                                             <li
                                                 key={item.sku}
@@ -563,10 +563,10 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                                     setCurrentItem(item);
                                                     setSearchTerm(`${item.sku} - ${item.name}`);
                                                 }}
-                                                className="p-2 hover:bg-[#636267] cursor-pointer flex justify-between items-center"
+                                                className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center"
                                             >
-                                                <span className="text-white">{item.sku} - {item.name}</span>
-                                                <span className="text-[#8f8e94] text-sm">Qty: {item.qty_on_hand}</span>
+                                                <span className="text-foreground">{item.sku} - {item.name}</span>
+                                                <span className="text-muted-foreground text-sm">Qty: {item.qty_on_hand}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -576,19 +576,19 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
                         {currentItem && (
                             <div>
-                                <label className="block text-sm font-medium text-[#8f8e94] mb-1">Quantity</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Quantity</label>
                                 <input
                                     type="number"
                                     min="1"
                                     value={currentQty}
                                     onChange={(e) => setCurrentQty(e.target.value)}
-                                    className="w-32 p-2 bg-[#48484a] border border-[#636267] rounded-md text-white"
+                                    className="w-32 input"
                                     placeholder="0"
                                 />
                                 <button
                                     type="button"
                                     onClick={handleAddItem}
-                                    className="ml-4 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition"
+                                    className="ml-4 btn-primary"
                                 >
                                     Add Item
                                 </button>
@@ -599,17 +599,17 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                     {/* Items List */}
                     {shipmentItems.length > 0 && (
                         <div className="mt-6">
-                            <h4 className="text-md font-semibold mb-2">Items to Ship:</h4>
+                            <h4 className="text-md font-semibold mb-2 text-foreground">Items to Ship:</h4>
                             <div className="space-y-2">
                                 {shipmentItems.map((item, index) => (
-                                    <div key={index} className="flex items-center justify-between bg-[#48484a] p-3 rounded-md">
-                                        <span className="text-white">{item.itemNo} - {item.description}</span>
+                                    <div key={index} className="flex items-center justify-between bg-secondary p-3 rounded-md">
+                                        <span className="text-foreground">{item.itemNo} - {item.description}</span>
                                         <div className="flex items-center space-x-4">
-                                            <span className="text-[#8f8e94]">Qty: {item.quantity}</span>
+                                            <span className="text-muted-foreground">Qty: {item.quantity}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => setShipmentItems(shipmentItems.filter((_, i) => i !== index))}
-                                                className="text-red-400 hover:text-red-300"
+                                                className="text-destructive hover:text-destructive/80 transition-colors"
                                             >
                                                 <TrashIcon className="h-4 w-4" />
                                             </button>
@@ -623,7 +623,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
                 <button
                     type="submit"
-                    className="w-full px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition"
+                    className="w-full btn-primary text-lg py-4"
                 >
                     {role === 'submitter' ? 'Submit for Approval' : 'Log Shipment'}
                 </button>
@@ -636,40 +636,40 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 function ShipmentHistoryPage({ shipments, title }: { shipments: Shipment[], title: string }) {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">{title}</h2>
+            <h2 className="text-2xl font-bold text-foreground">{title}</h2>
             
-            <div className="bg-[#3a3a3c] rounded-lg overflow-hidden">
+            <div className="card overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-[#48484a]">
-                        <thead className="bg-[#48484a]">
+                    <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-secondary">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Date
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Shipment ID
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Items
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     User
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-[#3a3a3c] divide-y divide-[#48484a]">
+                        <tbody className="bg-card divide-y divide-border">
                             {shipments.map((shipment) => (
-                                <tr key={shipment.id} className="hover:bg-[#48484a]">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                <tr key={shipment.id} className="hover:bg-secondary transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                                         {new Date(shipment.timestamp).toLocaleString()}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                                         {shipment.shipment_id}
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-[#8f8e94]">
+                                    <td className="px-6 py-4 text-sm text-muted-foreground">
                                         {shipment.items.length} item(s)
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#8f8e94]">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                                         {shipment.user_email}
                                     </td>
                                 </tr>
@@ -690,48 +690,48 @@ function ApprovalPage({ requests, onApprove, onReject }: {
 }) {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Pending Approvals</h2>
+            <h2 className="text-2xl font-bold text-foreground">Pending Approvals</h2>
             
             {requests.length === 0 ? (
-                <div className="text-center py-12 bg-[#3a3a3c] rounded-lg">
-                    <p className="text-[#8f8e94]">No pending approval requests.</p>
+                <div className="text-center py-12 card">
+                    <p className="text-muted-foreground">No pending approval requests.</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     {requests.map((request) => (
-                        <div key={request.id} className="bg-[#3a3a3c] p-6 rounded-lg">
+                        <div key={request.id} className="card p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white">
+                                    <h3 className="text-lg font-semibold text-foreground">
                                         Shipment ID: {request.shipment_id}
                                     </h3>
-                                    <p className="text-[#8f8e94]">
+                                    <p className="text-muted-foreground">
                                         Type: {request.type} | Requested by: {request.requestor_email}
                                     </p>
-                                    <p className="text-[#8f8e94] text-sm">
+                                    <p className="text-muted-foreground text-sm">
                                         {new Date(request.requested_at).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={() => onApprove(request)}
-                                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                                        className="btn-primary bg-status-high hover:bg-status-high/90"
                                     >
                                         Approve
                                     </button>
                                     <button
                                         onClick={() => onReject(request.id)}
-                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                                        className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors font-semibold"
                                     >
                                         Reject
                                     </button>
                                 </div>
                             </div>
-                            <div className="border-t border-[#48484a] pt-4">
-                                <h4 className="text-md font-medium text-white mb-2">Items:</h4>
+                            <div className="border-t border-border pt-4">
+                                <h4 className="text-md font-medium text-foreground mb-2">Items:</h4>
                                 <div className="space-y-1">
                                     {request.items.map((item, index) => (
-                                        <div key={index} className="text-[#8f8e94] text-sm">
+                                        <div key={index} className="text-muted-foreground text-sm">
                                             {item.itemNo} - {item.description} (Qty: {item.quantity})
                                         </div>
                                     ))}
