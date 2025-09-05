@@ -58,7 +58,7 @@ export function Navigation({
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center space-x-2">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
@@ -67,12 +67,19 @@ export function Navigation({
                 <button
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
-                  className={isActive ? 'nav-item-active' : 'nav-item'}
+                  className={`
+                    flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium 
+                    transition-all duration-200 min-w-0 whitespace-nowrap
+                    ${isActive 
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    }
+                  `}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-shrink-0">{item.label}</span>
                   {item.id === 'approval' && shipmentRequestsCount > 0 && (
-                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 ml-1 animate-pulse">
+                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 ml-1 animate-pulse flex-shrink-0">
                       {shipmentRequestsCount}
                     </span>
                   )}
@@ -130,12 +137,19 @@ export function Navigation({
                       setCurrentPage(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full ${isActive ? 'nav-item-active' : 'nav-item'} justify-start`}
+                    className={`
+                      w-full flex items-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium 
+                      transition-all duration-200 justify-start
+                      ${isActive 
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      }
+                    `}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-shrink-0">{item.label}</span>
                     {item.id === 'approval' && shipmentRequestsCount > 0 && (
-                      <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 ml-auto">
+                      <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 ml-auto flex-shrink-0">
                         {shipmentRequestsCount}
                       </span>
                     )}
