@@ -16,27 +16,45 @@ export type Database = {
     Tables: {
       inventory: {
         Row: {
+          category: string | null
           created_at: string
-          description: string | null
-          id: string
-          item_no: string
-          quantity: number
+          external_id: string | null
+          location: string | null
+          name: string
+          notes: string | null
+          qty_on_hand: number
+          sell_price: number | null
+          sku: string
+          unit_cost: number | null
+          uom: string | null
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
-          description?: string | null
-          id?: string
-          item_no: string
-          quantity?: number
+          external_id?: string | null
+          location?: string | null
+          name: string
+          notes?: string | null
+          qty_on_hand?: number
+          sell_price?: number | null
+          sku: string
+          unit_cost?: number | null
+          uom?: string | null
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
-          description?: string | null
-          id?: string
-          item_no?: string
-          quantity?: number
+          external_id?: string | null
+          location?: string | null
+          name?: string
+          notes?: string | null
+          qty_on_hand?: number
+          sell_price?: number | null
+          sku?: string
+          unit_cost?: number | null
+          uom?: string | null
           updated_at?: string
         }
         Relationships: []
