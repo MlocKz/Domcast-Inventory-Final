@@ -109,9 +109,46 @@ export function InventorySearchPage() {
         />
       </div>
 
-      {/* Inventory Table */}
+      {/* Inventory - Mobile list and Desktop table */}
       <div className="bg-card rounded-lg border border-border shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Mobile list (default) */}
+        <div className="md:hidden divide-y divide-border">
+          {filteredInventory.map((item) => (
+            <div key={item.sku} className="flex items-center justify-between px-4 py-3">
+              <div className="min-w-0 pr-3">
+                <div className="font-mono text-lg font-bold text-foreground truncate">{item.sku}</div>
+                <div className="text-sm text-muted-foreground line-clamp-2">{item.name}</div>
+              </div>
+              <div className={`text-2xl font-extrabold text-right ${
+                item.qty_on_hand === 0 ? 'text-destructive' :
+                item.qty_on_hand < 10 ? 'text-orange-500' : 
+                item.qty_on_hand < 50 ? 'text-yellow-600' : 'text-green-600'
+              }`}>
+                {item.qty_on_hand.toLocaleString()}
+              </div>
+            </div>
+          ))}
+
+          {filteredInventory.length === 0 && (
+            <div className="text-center py-12">
+              <PackageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">
+                {searchTerm ? 'No items match your search criteria' : 'No inventory items found'}
+              </p>
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="mt-2 text-primary hover:text-primary/80 underline"
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50">
@@ -146,23 +183,6 @@ export function InventorySearchPage() {
               ))}
             </tbody>
           </table>
-          
-          {filteredInventory.length === 0 && (
-            <div className="text-center py-12">
-              <PackageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">
-                {searchTerm ? 'No items match your search criteria' : 'No inventory items found'}
-              </p>
-              {searchTerm && (
-                <button 
-                  onClick={() => setSearchTerm('')}
-                  className="mt-2 text-primary hover:text-primary/80 underline"
-                >
-                  Clear search
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
