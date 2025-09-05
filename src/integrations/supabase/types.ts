@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           external_id: string | null
           location: string | null
+          min_qty: number | null
           name: string
           notes: string | null
           qty_on_hand: number
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string
           external_id?: string | null
           location?: string | null
+          min_qty?: number | null
           name: string
           notes?: string | null
           qty_on_hand?: number
@@ -48,6 +50,7 @@ export type Database = {
           created_at?: string
           external_id?: string | null
           location?: string | null
+          min_qty?: number | null
           name?: string
           notes?: string | null
           qty_on_hand?: number

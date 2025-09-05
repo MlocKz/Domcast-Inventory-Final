@@ -13,6 +13,7 @@ interface InventoryItem {
   sell_price: number | null;
   external_id: string | null;
   notes: string | null;
+  min_qty: number;
   created_at: string;
   updated_at: string;
 }
@@ -25,9 +26,7 @@ export function InventorySearchPage() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [editFormData, setEditFormData] = useState({
     qty_on_hand: 0,
-    unit_cost: '',
-    sell_price: '',
-    location: '',
+    min_qty: 0,
     notes: ''
   });
 
@@ -59,9 +58,7 @@ export function InventorySearchPage() {
     setEditingItem(item);
     setEditFormData({
       qty_on_hand: item.qty_on_hand,
-      unit_cost: item.unit_cost?.toString() || '',
-      sell_price: item.sell_price?.toString() || '',
-      location: item.location || '',
+      min_qty: item.min_qty || 0,
       notes: item.notes || ''
     });
   };
@@ -74,9 +71,7 @@ export function InventorySearchPage() {
         .from('inventory')
         .update({
           qty_on_hand: editFormData.qty_on_hand,
-          unit_cost: editFormData.unit_cost ? parseFloat(editFormData.unit_cost) : null,
-          sell_price: editFormData.sell_price ? parseFloat(editFormData.sell_price) : null,
-          location: editFormData.location || null,
+          min_qty: editFormData.min_qty,
           notes: editFormData.notes || null
         })
         .eq('sku', editingItem.sku);
@@ -95,9 +90,7 @@ export function InventorySearchPage() {
     setEditingItem(null);
     setEditFormData({
       qty_on_hand: 0,
-      unit_cost: '',
-      sell_price: '',
-      location: '',
+      min_qty: 0,
       notes: ''
     });
   };
@@ -187,7 +180,7 @@ export function InventorySearchPage() {
               </div>
               <div className="flex flex-col items-end">
                 <div className={`text-2xl font-extrabold transition-all duration-300 ${
-                  item.qty_on_hand === 0 ? 'text-destructive animate-glow-pulse' :
+                  item.qty_on_hand === 0 ? 'text-destructive' :
                   item.qty_on_hand < 10 ? 'text-status-low' : 
                   item.qty_on_hand < 50 ? 'text-warning' : 'text-status-high'
                 }`}>
@@ -253,7 +246,7 @@ export function InventorySearchPage() {
                   <td className="py-6 px-6 text-center">
                     <div className="flex flex-col items-center space-y-2">
                       <div className={`text-2xl font-bold transition-all duration-300 ${
-                        item.qty_on_hand === 0 ? 'text-destructive animate-glow-pulse' :
+                        item.qty_on_hand === 0 ? 'text-destructive' :
                         item.qty_on_hand < 10 ? 'text-status-low' : 
                         item.qty_on_hand < 50 ? 'text-warning' : 'text-status-high'
                       }`}>
@@ -328,44 +321,15 @@ export function InventorySearchPage() {
               
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Unit Cost
+                  Minimum Quantity
                 </label>
                 <input
                   type="number"
-                  step="0.01"
                   min="0"
-                  value={editFormData.unit_cost}
-                  onChange={(e) => setEditFormData({ ...editFormData, unit_cost: e.target.value })}
+                  value={editFormData.min_qty}
+                  onChange={(e) => setEditFormData({ ...editFormData, min_qty: parseInt(e.target.value) || 0 })}
                   className="input w-full"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Sell Price
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={editFormData.sell_price}
-                  onChange={(e) => setEditFormData({ ...editFormData, sell_price: e.target.value })}
-                  className="input w-full"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.location}
-                  onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
-                  className="input w-full"
-                  placeholder="Warehouse location"
+                  placeholder="0"
                 />
               </div>
               
