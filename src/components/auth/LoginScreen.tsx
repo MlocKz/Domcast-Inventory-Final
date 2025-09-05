@@ -120,7 +120,7 @@ export function LoginScreen() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary h-11 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-primary py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -128,7 +128,7 @@ export function LoginScreen() {
                   {isLoginView ? 'Signing in...' : 'Creating account...'}
                 </div>
               ) : (
-                <>
+                <div className="flex items-center justify-center">
                   {isLoginView ? (
                     <>
                       <User className="h-4 w-4 mr-2" />
@@ -140,7 +140,7 @@ export function LoginScreen() {
                       Create Account
                     </>
                   )}
-                </>
+                </div>
               )}
             </button>
 
