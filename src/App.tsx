@@ -27,6 +27,7 @@ import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { InventorySearchPage } from './components/inventory/InventorySearchPage';
 
 const supabase = _supabase as any;
 
@@ -324,7 +325,7 @@ export default function App() {
             setNotification={setNotification}
             shipmentRequestsCount={shipmentRequests.length}
         >
-            {currentPage === 'inventory' && <InventoryPage inventory={inventory} />}
+            {currentPage === 'inventory' && <InventorySearchPage />}
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
             {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" />}
             {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" />}
