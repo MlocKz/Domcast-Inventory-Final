@@ -1,0 +1,30 @@
+-- Complete the remaining DomCast inventory minimum quantities
+
+UPDATE inventory SET min_qty = 70 WHERE sku = 'LD2424F125';
+UPDATE inventory SET min_qty = 348 WHERE sku = 'LD2424F150';
+UPDATE inventory SET min_qty = 176 WHERE sku = 'LD2424F200';
+UPDATE inventory SET min_qty = 66 WHERE sku = 'LD2424F275';
+UPDATE inventory SET min_qty = 45 WHERE sku = 'LD2424S125';
+UPDATE inventory SET min_qty = 80 WHERE sku = 'LD2424S150';
+UPDATE inventory SET min_qty = 190 WHERE sku = 'LD2424S275';
+UPDATE inventory SET min_qty = 70 WHERE sku = 'LD24R125';
+UPDATE inventory SET min_qty = 59 WHERE sku = 'LD24R150';
+UPDATE inventory SET min_qty = 86 WHERE sku = 'LD24R200';
+UPDATE inventory SET min_qty = 43 WHERE sku = 'LD24R400';
+UPDATE inventory SET min_qty = 80 WHERE sku = 'LD24S150';
+UPDATE inventory SET min_qty = 70 WHERE sku = 'LD27R125';
+UPDATE inventory SET min_qty = 59 WHERE sku = 'LD27R150';
+UPDATE inventory SET min_qty = 310 WHERE sku = 'LD27R200';
+UPDATE inventory SET min_qty = 22 WHERE sku = 'LD27R400';
+UPDATE inventory SET min_qty = 80 WHERE sku = 'LD27S150';
+UPDATE inventory SET min_qty = 234 WHERE sku = 'LD30F150';
+UPDATE inventory SET min_qty = 77 WHERE sku = 'LD30F225';
+UPDATE inventory SET min_qty = 22 WHERE sku = 'LD30F400';
+UPDATE inventory SET min_qty = 284 WHERE sku = 'LD30S225';
+UPDATE inventory SET min_qty = 0 WHERE sku = 'LD34F200';
+UPDATE inventory SET min_qty = 400 WHERE sku = 'LDSP2424FS025';
+UPDATE inventory SET min_qty = 0 WHERE sku = 'LDSP2424FS150';
+UPDATE inventory SET min_qty = 400 WHERE sku = 'LDSP24FS025';
+UPDATE inventory SET min_qty = 0 WHERE sku = 'LDSP25FSCAN025';
+UPDATE inventory SET min_qty = 200 WHERE sku = 'LDSP27FS025';
+UPDATE inventory SET min_qty = 200 WHERE sku = 'LDSP30FS025';
