@@ -29,6 +29,7 @@ import * as XLSX from 'xlsx';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { InventorySearchPage } from './components/inventory/InventorySearchPage';
+import { AdminHistoryPage } from './components/admin/AdminHistoryPage';
 
 const supabase = _supabase as any;
 
@@ -48,7 +49,7 @@ export default function App() {
     useEffect(() => {
         // Set initial page based on role
         if (userRole === 'submitter') {
-            setCurrentPage('log_shipment');
+            setCurrentPage('inventory');
         } else {
             setCurrentPage('inventory');
         }
@@ -275,6 +276,7 @@ export default function App() {
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
             {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+            {currentPage === 'admin_history' && <AdminHistoryPage />}
         </AppLayout>
     );
 }

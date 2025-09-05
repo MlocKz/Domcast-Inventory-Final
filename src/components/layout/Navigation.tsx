@@ -21,10 +21,11 @@ interface NavigationProps {
 }
 
 const navigationItems = [
-  { id: 'inventory', label: 'Inventory', icon: InventoryIcon, roles: ['admin', 'editor'] },
+  { id: 'inventory', label: 'Inventory', icon: InventoryIcon, roles: ['admin', 'editor', 'submitter'] },
   { id: 'log_shipment', label: 'Log Shipment', icon: ShipmentIcon, roles: ['admin', 'editor', 'submitter'] },
   { id: 'incoming', label: 'Incoming', icon: IncomingIcon, roles: ['admin', 'editor'] },
   { id: 'outgoing', label: 'Outgoing', icon: OutgoingIcon, roles: ['admin', 'editor'] },
+  { id: 'admin_history', label: 'Change History', icon: UserIcon, roles: ['admin'] },
 ];
 
 export function Navigation({
