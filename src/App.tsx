@@ -130,7 +130,7 @@ export default function App() {
             const { data: inventoryData, error: inventoryError } = await supabase
                 .from('inventory')
                 .select('*')
-                .order('item_no');
+                .order('sku');
 
             if (inventoryError) throw inventoryError;
             setInventory(inventoryData || []);
@@ -204,13 +204,13 @@ export default function App() {
 
             // Update inventory quantities
             for (const item of items) {
-                const inventoryItem = inventory.find(i => i.item_no === item.itemNo);
+                const inventoryItem = inventory.find(i => i.sku === item.itemNo);
                 if (inventoryItem) {
-                    const newQuantity = inventoryItem.quantity + (type === 'incoming' ? item.quantity : -item.quantity);
+                    const newQuantity = inventoryItem.qty_on_hand + (type === 'incoming' ? item.quantity : -item.quantity);
                     await supabase
                         .from('inventory')
-                        .update({ quantity: newQuantity })
-                        .eq('id', inventoryItem.id);
+                        .update({ qty_on_hand: newQuantity })
+                        .eq('sku', inventoryItem.sku);
                 }
             }
 
@@ -240,13 +240,13 @@ export default function App() {
 
             // Update inventory quantities
             for (const item of request.items) {
-                const inventoryItem = inventory.find(i => i.item_no === item.itemNo);
+                const inventoryItem = inventory.find(i => i.sku === item.itemNo);
                 if (inventoryItem) {
-                    const newQuantity = inventoryItem.quantity + (request.type === 'incoming' ? item.quantity : -item.quantity);
+                    const newQuantity = inventoryItem.qty_on_hand + (request.type === 'incoming' ? item.quantity : -item.quantity);
                     await supabase
                         .from('inventory')
-                        .update({ quantity: newQuantity })
-                        .eq('id', inventoryItem.id);
+                        .update({ qty_on_hand: newQuantity })
+                        .eq('sku', inventoryItem.sku);
                 }
             }
 
@@ -345,8 +345,8 @@ function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
 
     const filteredInventory = useMemo(() => {
         return inventory.filter(item =>
-            item.item_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchTerm.toLowerCase())
+            item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [inventory, searchTerm]);
 
@@ -380,15 +380,15 @@ function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
                         </thead>
                         <tbody>
                             {filteredInventory.map((item) => (
-                                <tr key={item.id} className="border-b border-border hover:bg-muted/50">
-                                    <td className="py-3 px-4 font-mono text-sm text-foreground">{item.item_no}</td>
-                                    <td className="py-3 px-4 text-foreground">{item.description}</td>
+                                <tr key={item.sku} className="border-b border-border hover:bg-muted/50">
+                                    <td className="py-3 px-4 font-mono text-sm text-foreground">{item.sku}</td>
+                                    <td className="py-3 px-4 text-foreground">{item.name}</td>
                                     <td className="py-3 px-4">
                                         <span className={`font-semibold ${
-                                            item.quantity < 10 ? 'text-red-500' : 
-                                            item.quantity < 50 ? 'text-yellow-500' : 'text-green-500'
+                                            item.qty_on_hand < 10 ? 'text-red-500' : 
+                                            item.qty_on_hand < 50 ? 'text-yellow-500' : 'text-green-500'
                                         }`}>
-                                            {item.quantity}
+                                            {item.qty_on_hand}
                                         </span>
                                     </td>
                                 </tr>
@@ -424,9 +424,9 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
     const filteredItems = useMemo(() => 
         searchTerm
             ? inventory.filter(i =>
-                !shipmentItems.some(si => si.itemNo === i.item_no) &&
-                (i.item_no?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                 i.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+                !shipmentItems.some(si => si.itemNo === i.sku) &&
+                (i.sku?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                 i.name?.toLowerCase().includes(searchTerm.toLowerCase()))
             ).slice(0, 15)
             : [],
     [searchTerm, inventory, shipmentItems]);
@@ -438,8 +438,8 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
             return;
         }
         setShipmentItems([...shipmentItems, { 
-            itemNo: currentItem.item_no, 
-            description: currentItem.description, 
+            itemNo: currentItem.sku, 
+            description: currentItem.name, 
             quantity: Number(currentQty) 
         }]);
         setCurrentItem(null);
@@ -521,15 +521,15 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                     <ul className="absolute z-10 w-full bg-[#48484a] border border-[#636267] mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
                                         {filteredItems.map(item => (
                                             <li
-                                                key={item.id}
+                                                key={item.sku}
                                                 onClick={() => {
                                                     setCurrentItem(item);
-                                                    setSearchTerm(`${item.item_no} - ${item.description}`);
+                                                    setSearchTerm(`${item.sku} - ${item.name}`);
                                                 }}
                                                 className="p-2 hover:bg-[#636267] cursor-pointer flex justify-between items-center"
                                             >
-                                                <span className="text-white">{item.item_no} - {item.description}</span>
-                                                <span className="text-[#8f8e94] text-sm">Qty: {item.quantity}</span>
+                                                <span className="text-white">{item.sku} - {item.name}</span>
+                                                <span className="text-[#8f8e94] text-sm">Qty: {item.qty_on_hand}</span>
                                             </li>
                                         ))}
                                     </ul>

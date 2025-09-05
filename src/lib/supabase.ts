@@ -40,10 +40,16 @@ export interface User {
 }
 
 export interface InventoryItem {
-  id: string
-  item_no: string
-  description: string
-  quantity: number
+  sku: string
+  name: string
+  category: string | null
+  qty_on_hand: number
+  uom: string
+  location: string | null
+  unit_cost: number | null
+  sell_price: number | null
+  external_id: string | null
+  notes: string | null
   created_at: string
   updated_at: string
 }
