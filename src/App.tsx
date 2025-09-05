@@ -834,8 +834,18 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 }
 
 // Simple Shipment History Page
-function ShipmentHistoryPage({ shipments, title }: { shipments: Shipment[], title: string }) {
+function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipment }: { 
+    shipments: Shipment[], 
+    title: string,
+    onUpdateShipment?: (shipment: Shipment) => void,
+    onDeleteShipment?: (shipmentId: string) => void
+}) {
     const [expandedShipments, setExpandedShipments] = useState<Set<string>>(new Set());
+    const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        shipment_id: '',
+        items: [] as Array<{itemNo: string, description: string, quantity: number}>
+    });
 
     const toggleShipment = (shipmentId: string) => {
         const newExpanded = new Set(expandedShipments);
@@ -845,6 +855,38 @@ function ShipmentHistoryPage({ shipments, title }: { shipments: Shipment[], titl
             newExpanded.add(shipmentId);
         }
         setExpandedShipments(newExpanded);
+    };
+
+    const startEdit = (shipment: Shipment) => {
+        setEditingShipment(shipment);
+        setEditFormData({
+            shipment_id: shipment.shipment_id,
+            items: [...shipment.items]
+        });
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingShipment || !onUpdateShipment) return;
+        
+        const updatedShipment = {
+            ...editingShipment,
+            shipment_id: editFormData.shipment_id,
+            items: editFormData.items
+        };
+        
+        await onUpdateShipment(updatedShipment);
+        setEditingShipment(null);
+    };
+
+    const updateItemQuantity = (index: number, quantity: number) => {
+        const newItems = [...editFormData.items];
+        newItems[index].quantity = quantity;
+        setEditFormData({ ...editFormData, items: newItems });
+    };
+
+    const removeItem = (index: number) => {
+        const newItems = editFormData.items.filter((_, i) => i !== index);
+        setEditFormData({ ...editFormData, items: newItems });
     };
 
     return (
@@ -886,21 +928,49 @@ function ShipmentHistoryPage({ shipments, title }: { shipments: Shipment[], titl
                             {expandedShipments.has(shipment.id) && (
                                 <div className="px-6 pb-4 border-t border-border animate-accordion-down">
                                     <div className="pt-4 space-y-3">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <h4 className="text-sm font-medium text-foreground mb-1">Type:</h4>
-                                                <p className="text-sm text-muted-foreground capitalize">{shipment.type}</p>
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-medium text-foreground mb-1">User:</h4>
-                                                <p className="text-sm text-muted-foreground">{shipment.user_email}</p>
-                                            </div>
-                                            {shipment.approved_by && (
+                                        <div className="flex items-center justify-between">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                                                 <div>
-                                                    <h4 className="text-sm font-medium text-foreground mb-1">Approved By:</h4>
-                                                    <p className="text-sm text-muted-foreground">{shipment.approved_by}</p>
+                                                    <h4 className="text-sm font-medium text-foreground mb-1">Type:</h4>
+                                                    <p className="text-sm text-muted-foreground capitalize">{shipment.type}</p>
                                                 </div>
-                                            )}
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-foreground mb-1">User:</h4>
+                                                    <p className="text-sm text-muted-foreground">{shipment.user_email}</p>
+                                                </div>
+                                                {shipment.approved_by && (
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-foreground mb-1">Approved By:</h4>
+                                                        <p className="text-sm text-muted-foreground">{shipment.approved_by}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex space-x-2 ml-4">
+                                                {onUpdateShipment && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            startEdit(shipment);
+                                                        }}
+                                                        className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
+                                                {onDeleteShipment && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm('Are you sure you want to delete this shipment?')) {
+                                                                onDeleteShipment(shipment.id);
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium hover:bg-destructive/90 transition-colors"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         
                                         <div>
@@ -926,6 +996,69 @@ function ShipmentHistoryPage({ shipments, title }: { shipments: Shipment[], titl
                     ))
                 )}
             </div>
+
+            {/* Edit Shipment Modal */}
+            {editingShipment && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-card p-6 rounded-xl border border-border max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                        <h3 className="text-xl font-semibold text-foreground mb-4">Edit Shipment</h3>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Shipment ID</label>
+                                <input
+                                    type="text"
+                                    value={editFormData.shipment_id}
+                                    onChange={(e) => setEditFormData({ ...editFormData, shipment_id: e.target.value })}
+                                    className="input w-full"
+                                />
+                            </div>
+                            
+                            <div>
+                                <h4 className="text-sm font-medium text-foreground mb-2">Items</h4>
+                                <div className="space-y-2">
+                                    {editFormData.items.map((item, index) => (
+                                        <div key={index} className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-lg">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-foreground">{item.itemNo}</p>
+                                                <p className="text-xs text-muted-foreground">{item.description}</p>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={item.quantity}
+                                                onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 0)}
+                                                className="input w-20"
+                                            />
+                                            <button
+                                                onClick={() => removeItem(index)}
+                                                className="px-2 py-1 bg-destructive text-destructive-foreground rounded text-sm"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-3 mt-6">
+                            <button
+                                onClick={() => setEditingShipment(null)}
+                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
