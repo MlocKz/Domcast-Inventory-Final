@@ -27,7 +27,7 @@ export function AppLayout({
   shipmentRequestsCount = 0
 }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground dark">
+    <div className="min-h-screen bg-gradient-card text-foreground">
       <Navigation
         user={user}
         role={role}
@@ -37,8 +37,10 @@ export function AppLayout({
         shipmentRequestsCount={shipmentRequestsCount}
       />
       
-      <main className="container mx-auto px-6 py-8 animate-fade-in">
-        {children}
+      <main className="container mx-auto px-6 py-12">
+        <div className="animate-fade-in">
+          {children}
+        </div>
       </main>
 
       <Notification

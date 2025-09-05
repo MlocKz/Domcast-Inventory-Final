@@ -87,58 +87,78 @@ export function InventorySearchPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between animate-fade-in">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Inventory</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+            Inventory Management
+          </h1>
+          <p className="text-muted-foreground text-lg">
             {filteredInventory.length} items {searchTerm && `(filtered from ${inventory.length})`}
           </p>
         </div>
       </div>
 
       {/* Search Box */}
-      <div className="relative max-w-md">
-        <SearchIcon className="h-5 w-5 absolute left-3 top-3 text-muted-foreground" />
+      <div className="relative max-w-lg animate-scale-in">
+        <SearchIcon className="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-primary" />
         <input
           type="text"
           placeholder="Search by SKU or name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          className="w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl bg-card/80 backdrop-blur-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 text-lg font-medium shadow-md"
         />
+        <div className="absolute inset-0 bg-gradient-accent opacity-50 rounded-xl -z-10 blur-sm"></div>
       </div>
 
       {/* Inventory - Mobile list and Desktop table */}
-      <div className="bg-card rounded-lg border border-border shadow-sm">
+      <div className="card shadow-elegant animate-fade-in" style={{ animationDelay: '0.2s' }}>
         {/* Mobile list (default) */}
         <div className="md:hidden divide-y divide-border">
-          {filteredInventory.map((item) => (
-            <div key={item.sku} className="flex items-center justify-between px-4 py-3">
-              <div className="min-w-0 pr-3">
-                <div className="font-mono text-lg font-bold text-foreground truncate">{item.sku}</div>
-                <div className="text-sm text-muted-foreground line-clamp-2">{item.name}</div>
+          {filteredInventory.map((item, index) => (
+            <div 
+              key={item.sku} 
+              className="flex items-center justify-between px-6 py-5 hover:bg-gradient-accent transition-all duration-300 group"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <div className="min-w-0 pr-4 flex-1">
+                <div className="font-mono text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+                  {item.sku}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  {item.name}
+                </div>
               </div>
-              <div className={`text-2xl font-extrabold text-right ${
-                item.qty_on_hand === 0 ? 'text-destructive' :
-                item.qty_on_hand < 10 ? 'text-orange-500' : 
-                item.qty_on_hand < 50 ? 'text-yellow-600' : 'text-green-600'
-              }`}>
-                {item.qty_on_hand.toLocaleString()}
+              <div className="flex flex-col items-end">
+                <div className={`text-2xl font-extrabold transition-all duration-300 ${
+                  item.qty_on_hand === 0 ? 'text-destructive animate-glow-pulse' :
+                  item.qty_on_hand < 10 ? 'text-orange-500' : 
+                  item.qty_on_hand < 50 ? 'text-warning' : 'text-success'
+                }`}>
+                  {item.qty_on_hand.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">
+                  {item.qty_on_hand === 0 ? 'Out of Stock' :
+                   item.qty_on_hand < 10 ? 'Low Stock' : 'In Stock'}
+                </div>
               </div>
             </div>
           ))}
 
           {filteredInventory.length === 0 && (
-            <div className="text-center py-12">
-              <PackageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">
-                {searchTerm ? 'No items match your search criteria' : 'No inventory items found'}
+            <div className="text-center py-16 animate-fade-in">
+              <PackageIcon className="h-16 w-16 mx-auto mb-6 text-muted-foreground opacity-40" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                {searchTerm ? 'No items found' : 'No inventory items'}
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                {searchTerm ? 'Try adjusting your search criteria' : 'Start by adding items to your inventory'}
               </p>
               {searchTerm && (
                 <button 
                   onClick={() => setSearchTerm('')}
-                  className="mt-2 text-primary hover:text-primary/80 underline"
+                  className="btn-primary px-6 py-3"
                 >
                   Clear search
                 </button>
@@ -148,41 +168,75 @@ export function InventorySearchPage() {
         </div>
 
         {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="text-left py-4 px-4 font-semibold text-foreground">SKU</th>
-                <th className="text-left py-4 px-4 font-semibold text-foreground">Name</th>
-                <th className="text-center py-4 px-4 font-semibold text-foreground">Quantity</th>
+              <tr className="border-b border-border bg-gradient-accent">
+                <th className="text-left py-6 px-6 font-bold text-foreground text-lg">Product Code</th>
+                <th className="text-left py-6 px-6 font-bold text-foreground text-lg">Description</th>
+                <th className="text-center py-6 px-6 font-bold text-foreground text-lg">Stock Level</th>
               </tr>
             </thead>
             <tbody>
-              {filteredInventory.map((item) => (
-                <tr key={item.sku} className="border-b border-border hover:bg-muted/25 transition-colors">
-                  <td className="py-4 px-4">
-                    <div className="font-mono text-base font-bold text-foreground">
+              {filteredInventory.map((item, index) => (
+                <tr 
+                  key={item.sku} 
+                  className="border-b border-border hover:bg-gradient-accent transition-all duration-300 group animate-fade-in"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <td className="py-6 px-6">
+                    <div className="font-mono text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
                       {item.sku}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="text-foreground font-medium">
+                  <td className="py-6 px-6">
+                    <div className="text-foreground font-medium text-base leading-relaxed">
                       {item.name}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-center">
-                    <div className={`text-xl font-bold ${
-                      item.qty_on_hand === 0 ? 'text-destructive' :
-                      item.qty_on_hand < 10 ? 'text-orange-500' : 
-                      item.qty_on_hand < 50 ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {item.qty_on_hand.toLocaleString()}
+                  <td className="py-6 px-6 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className={`text-2xl font-bold transition-all duration-300 ${
+                        item.qty_on_hand === 0 ? 'text-destructive animate-glow-pulse' :
+                        item.qty_on_hand < 10 ? 'text-orange-500' : 
+                        item.qty_on_hand < 50 ? 'text-warning' : 'text-success'
+                      }`}>
+                        {item.qty_on_hand.toLocaleString()}
+                      </div>
+                      <div className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                        item.qty_on_hand === 0 ? 'bg-destructive/20 text-destructive' :
+                        item.qty_on_hand < 10 ? 'bg-orange-500/20 text-orange-500' : 
+                        item.qty_on_hand < 50 ? 'bg-warning/20 text-warning' : 'bg-success/20 text-success'
+                      }`}>
+                        {item.qty_on_hand === 0 ? 'Out of Stock' :
+                         item.qty_on_hand < 10 ? 'Low Stock' : 'In Stock'}
+                      </div>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {filteredInventory.length === 0 && (
+            <div className="text-center py-20 animate-fade-in">
+              <PackageIcon className="h-20 w-20 mx-auto mb-6 text-muted-foreground opacity-40" />
+              <h3 className="text-2xl font-semibold text-foreground mb-3">
+                {searchTerm ? 'No items found' : 'No inventory items'}
+              </h3>
+              <p className="text-muted-foreground text-lg mb-8">
+                {searchTerm ? 'Try adjusting your search criteria' : 'Start by adding items to your inventory'}
+              </p>
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="btn-primary px-8 py-4 text-lg"
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

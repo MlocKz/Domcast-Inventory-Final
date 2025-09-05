@@ -45,21 +45,26 @@ export function Navigation({
   );
 
   return (
-    <nav className="bg-card border-b border-border shadow-sm">
+    <nav className="bg-card border-b border-border shadow-elegant backdrop-blur-xl bg-opacity-95 sticky top-0 z-50">
       <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo and Brand */}
-          <div className="flex items-center space-x-4">
-            <img src={DccaLogo} alt="DomCast Logo" className="h-10 w-auto" />
+          <div className="flex items-center space-x-4 animate-fade-in">
+            <div className="relative">
+              <img src={DccaLogo} alt="DomCast Logo" className="h-12 w-auto drop-shadow-lg" />
+              <div className="absolute -inset-1 bg-gradient-primary opacity-20 blur-sm rounded-full"></div>
+            </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-foreground">Inventory Management</h1>
-              <p className="text-sm text-muted-foreground">DomCast Corporation</p>
+              <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Inventory Management
+              </h1>
+              <p className="text-sm text-muted-foreground font-medium">DomCast Corporation</p>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
-            {filteredNavItems.map((item) => {
+          <div className="hidden md:flex items-center space-x-1">
+            {filteredNavItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
               
@@ -68,20 +73,24 @@ export function Navigation({
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
                   className={`
-                    flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium 
-                    transition-all duration-200 min-w-0 whitespace-nowrap
+                    relative flex items-center space-x-3 px-6 py-3 rounded-xl text-sm font-semibold 
+                    transition-all duration-300 min-w-0 whitespace-nowrap group animate-fade-in
                     ${isActive 
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      ? 'bg-gradient-primary text-primary-foreground shadow-glow' 
+                      : 'text-muted-foreground hover:bg-gradient-accent hover:text-foreground'
                     }
                   `}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <Icon className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
                   <span className="flex-shrink-0">{item.label}</span>
                   {item.id === 'approval' && shipmentRequestsCount > 0 && (
-                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 ml-1 animate-pulse flex-shrink-0">
+                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-1 ml-2 animate-glow-pulse flex-shrink-0 font-bold">
                       {shipmentRequestsCount}
                     </span>
+                  )}
+                  {isActive && (
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white rounded-full opacity-80"></div>
                   )}
                 </button>
               );
@@ -90,43 +99,48 @@ export function Navigation({
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-3">
-              <div className="flex items-center space-x-2 text-sm">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
+            <div className="hidden sm:flex items-center space-x-4 bg-gradient-accent rounded-xl p-3 backdrop-blur-sm">
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="relative">
+                  <UserIcon className="h-5 w-5 text-primary" />
+                  <div className="absolute -inset-1 bg-primary opacity-20 blur rounded-full"></div>
+                </div>
                 <div className="text-right">
-                  <p className="font-medium text-foreground">{user.email}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{role} access</p>
+                  <p className="font-semibold text-foreground">{user.email}</p>
+                  <p className="text-xs text-muted-foreground capitalize font-medium">{role} access</p>
                 </div>
               </div>
             </div>
             
             <button
               onClick={onSignOut}
-              className="btn-outline px-3 py-2 text-sm"
+              className="btn-outline px-4 py-2 text-sm font-semibold group"
             >
-              <LogOutIcon className="h-4 w-4 mr-2" />
+              <LogOutIcon className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
 
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden btn-ghost p-2"
+              className="md:hidden btn-ghost p-3 relative"
             >
-              {isMobileMenuOpen ? (
-                <XIcon className="h-5 w-5" />
-              ) : (
-                <MenuIcon className="h-5 w-5" />
-              )}
+              <div className="relative">
+                {isMobileMenuOpen ? (
+                  <XIcon className="h-6 w-6 transition-transform rotate-90" />
+                ) : (
+                  <MenuIcon className="h-6 w-6 transition-transform" />
+                )}
+              </div>
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-slide-in">
-            <div className="space-y-2">
-              {filteredNavItems.map((item) => {
+          <div className="md:hidden py-6 border-t border-border animate-slide-in bg-gradient-accent rounded-b-xl">
+            <div className="space-y-3">
+              {filteredNavItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
                 
@@ -138,18 +152,19 @@ export function Navigation({
                       setIsMobileMenuOpen(false);
                     }}
                     className={`
-                      w-full flex items-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium 
-                      transition-all duration-200 justify-start
+                      w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-sm font-semibold 
+                      transition-all duration-300 justify-start group animate-fade-in
                       ${isActive 
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        ? 'bg-gradient-primary text-primary-foreground shadow-glow' 
+                        : 'text-muted-foreground hover:bg-gradient-accent hover:text-foreground'
                       }
                     `}
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <Icon className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
                     <span className="flex-shrink-0">{item.label}</span>
                     {item.id === 'approval' && shipmentRequestsCount > 0 && (
-                      <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 ml-auto flex-shrink-0">
+                      <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-3 py-1 ml-auto flex-shrink-0 font-bold animate-bounce-gentle">
                         {shipmentRequestsCount}
                       </span>
                     )}
@@ -158,12 +173,14 @@ export function Navigation({
               })}
             </div>
             
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="text-sm text-muted-foreground mb-2">
-                Signed in as <span className="font-medium text-foreground">{user.email}</span>
-              </div>
-              <div className="text-xs text-muted-foreground capitalize">
-                {role} access level
+            <div className="mt-6 pt-6 border-t border-border">
+              <div className="bg-gradient-card rounded-xl p-4">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Signed in as <span className="font-semibold text-foreground">{user.email}</span>
+                </div>
+                <div className="text-xs text-muted-foreground capitalize font-medium">
+                  {role} access level
+                </div>
               </div>
             </div>
           </div>
