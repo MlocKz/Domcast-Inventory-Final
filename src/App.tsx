@@ -459,6 +459,38 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
     const [currentQty, setCurrentQty] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
+    const [existingShipmentIds, setExistingShipmentIds] = useState<string[]>([]);
+    const [isDuplicateId, setIsDuplicateId] = useState(false);
+
+    // Load existing shipment IDs
+    useEffect(() => {
+        const loadExistingShipmentIds = async () => {
+            try {
+                const { data, error } = await _supabase
+                    .from('shipments')
+                    .select('shipment_id');
+                
+                if (error) throw error;
+                
+                const ids = data?.map(item => item.shipment_id.toLowerCase()) || [];
+                setExistingShipmentIds(ids);
+            } catch (err) {
+                console.error('Error loading existing shipment IDs:', err);
+            }
+        };
+
+        loadExistingShipmentIds();
+    }, []);
+
+    // Check for duplicate shipment ID
+    useEffect(() => {
+        if (shipmentId.trim()) {
+            const isDuplicate = existingShipmentIds.includes(shipmentId.trim().toLowerCase());
+            setIsDuplicateId(isDuplicate);
+        } else {
+            setIsDuplicateId(false);
+        }
+    }, [shipmentId, existingShipmentIds]);
 
     const filteredItems = useMemo(() => 
         searchTerm
@@ -498,6 +530,11 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
             return;
         }
         
+        if (isDuplicateId) {
+            setError('This shipment ID already exists. Please use a different ID.');
+            return;
+        }
+        
         if (shipmentItems.length === 0) {
             setError('Please add at least one item to the shipment.');
             return;
@@ -509,10 +546,12 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
             items: shipmentItems
         });
         
-        // Reset form
+        // Reset form and update existing IDs
+        setExistingShipmentIds(prev => [...prev, shipmentId.trim().toLowerCase()]);
         setShipmentId('');
         setShipmentItems([]);
         setError('');
+        setIsDuplicateId(false);
     };
 
     return (
@@ -529,10 +568,22 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
             
             {/* Error Message */}
             {error && (
-                <div className="card p-4 border-destructive bg-destructive/10 animate-shake">
+                <div className="card p-4 border-destructive bg-destructive/10 animate-bounce-gentle">
                     <div className="flex items-center space-x-2">
                         <AlertTriangle className="h-5 w-5 text-destructive" />
                         <p className="text-destructive font-medium">{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Duplicate ID Warning */}
+            {isDuplicateId && !error && (
+                <div className="card p-4 border-warning bg-warning/10 animate-glow-pulse">
+                    <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-5 w-5 text-warning" />
+                        <p className="text-warning font-medium">
+                            ⚠️ Warning: This shipment ID already exists. Please choose a different ID.
+                        </p>
                     </div>
                 </div>
             )}
@@ -550,14 +601,25 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                             <label className="block text-sm font-semibold text-foreground mb-2">
                                 Shipment ID *
                             </label>
-                            <input
-                                type="text"
-                                value={shipmentId}
-                                onChange={(e) => setShipmentId(e.target.value)}
-                                className="input text-lg"
-                                placeholder="Enter shipment identifier..."
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={shipmentId}
+                                    onChange={(e) => setShipmentId(e.target.value)}
+                                    className={`input text-lg transition-all duration-300 ${
+                                        isDuplicateId 
+                                            ? 'border-warning ring-4 ring-warning/20 shadow-glow animate-glow-pulse' 
+                                            : 'focus:border-primary'
+                                    }`}
+                                    placeholder="Enter shipment identifier..."
+                                    required
+                                />
+                                {isDuplicateId && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <AlertTriangle className="h-5 w-5 text-warning animate-bounce" />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         
                         <div className="space-y-2">
@@ -603,12 +665,12 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                     
                     <div className="space-y-6">
                         {/* Item Search */}
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                             <label className="block text-sm font-semibold text-foreground mb-2">
                                 Search Inventory
                             </label>
                             <div className="relative">
-                                <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
                                 <input
                                     type="text"
                                     value={searchTerm}
@@ -617,10 +679,10 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                         setCurrentItem(null);
                                     }}
                                     placeholder="Start typing SKU or description..."
-                                    className="input pl-12 text-lg"
+                                    className="input pl-12 text-lg relative z-10"
                                 />
                                 {filteredItems.length > 0 && !currentItem && (
-                                    <ul className="absolute z-20 w-full bg-card border border-border mt-2 rounded-xl shadow-elegant max-h-80 overflow-auto">
+                                    <ul className="absolute z-50 w-full bg-card border border-border mt-2 rounded-xl shadow-elegant max-h-80 overflow-auto">
                                         {filteredItems.map((item, index) => (
                                             <li
                                                 key={item.sku}
@@ -629,6 +691,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                                     setSearchTerm(`${item.sku} - ${item.name}`);
                                                 }}
                                                 className="p-4 hover:bg-gradient-accent cursor-pointer border-b border-border last:border-b-0 transition-all duration-200 group"
+                                                style={{ zIndex: 100 }}
                                             >
                                                 <div className="flex justify-between items-center">
                                                     <div>
@@ -747,7 +810,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                 <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
                     <button
                         type="submit"
-                        disabled={shipmentItems.length === 0 || !shipmentId.trim()}
+                        disabled={shipmentItems.length === 0 || !shipmentId.trim() || isDuplicateId}
                         className="w-full btn-primary text-xl py-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-elegant"
                     >
                         <div className="flex items-center justify-center space-x-3">
