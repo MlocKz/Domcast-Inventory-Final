@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      inventory: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          item_no: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_no: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_no?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -35,6 +62,72 @@ export type Database = {
           id?: string
           role?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      shipment_requests: {
+        Row: {
+          id: string
+          items: Json
+          requested_at: string
+          requestor_email: string | null
+          requestor_id: string
+          shipment_id: string
+          status: string
+          type: string
+        }
+        Insert: {
+          id?: string
+          items: Json
+          requested_at?: string
+          requestor_email?: string | null
+          requestor_id: string
+          shipment_id: string
+          status?: string
+          type: string
+        }
+        Update: {
+          id?: string
+          items?: Json
+          requested_at?: string
+          requestor_email?: string | null
+          requestor_id?: string
+          shipment_id?: string
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      shipments: {
+        Row: {
+          approved_by: string | null
+          id: string
+          items: Json
+          shipment_id: string
+          timestamp: string
+          type: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          id?: string
+          items: Json
+          shipment_id: string
+          timestamp?: string
+          type: string
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          id?: string
+          items?: Json
+          shipment_id?: string
+          timestamp?: string
+          type?: string
+          user_email?: string | null
+          user_id?: string
         }
         Relationships: []
       }
