@@ -1,30 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment, ShipmentRequest } from './lib/supabase';
-import {
-  PackageSearch as InventoryIcon,
-  PackageCheck as ShipmentIcon,
-  History as HistoryIcon,
-  ArrowDown as IncomingIcon,
-  ArrowUp as OutgoingIcon,
-  Trash2 as TrashIcon,
-  ChevronDown,
-  AlertTriangle as WarningIcon,
-  LogOut as LogOutIcon,
-  FilePenLine as EditIcon,
-  BarChart2 as AnalyticsIcon,
-  Search as SearchIcon,
-  X as XIcon,
-  Menu as MenuIcon,
-  Camera as CameraIcon,
-  PlusCircle as PlusCircleIcon,
-  Download as DownloadIcon,
-  FileCheck2 as ApprovalIcon,
-} from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import DccaLogo from './assets/DCCA_Logo.png';
-import Tesseract from 'tesseract.js';
-import * as XLSX from 'xlsx';
+import { AppLayout } from './components/layout/AppLayout';
+import { LoginScreen } from './components/auth/LoginScreen';
 
 const supabase = _supabase as any;
 
@@ -126,7 +104,20 @@ export default function App() {
         return <LoginScreen />;
     }
 
-    return <MainAppView user={user} role={userRole} onSignOut={handleSignOut} />;
+    return (
+        <AppLayout
+            user={user}
+            role={userRole}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            onSignOut={handleSignOut}
+            notification={notification}
+            setNotification={setNotification}
+            shipmentRequestsCount={shipmentRequests.length}
+        >
+            {/* ... keep existing code (page components) */}
+        </AppLayout>
+    );
 }
 
 // Login and Sign-up Screen Component
