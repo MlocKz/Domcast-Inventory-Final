@@ -52,9 +52,6 @@ export function Navigation({
           <div className="flex items-center space-x-4 animate-fade-in">
             <div className="flex items-center space-x-3">
               <img src={DccaLogo} alt="DomCast Logo" className="h-12 w-auto" />
-              <div className="hidden sm:block">
-                <p className="text-sm text-muted-foreground font-medium">DomCast Corporation</p>
-              </div>
             </div>
           </div>
 
