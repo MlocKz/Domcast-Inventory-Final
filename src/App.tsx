@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment, ShipmentRequest } from './lib/supabase';
+import {
+  PackageSearch as InventoryIcon,
+  PackageCheck as ShipmentIcon,
+  History as HistoryIcon,
+  ArrowDown as IncomingIcon,
+  ArrowUp as OutgoingIcon,
+  Trash2 as TrashIcon,
+  ChevronDown,
+  AlertTriangle as WarningIcon,
+  LogOut as LogOutIcon,
+  FilePenLine as EditIcon,
+  BarChart2 as AnalyticsIcon,
+  Search as SearchIcon,
+  X as XIcon,
+  Menu as MenuIcon,
+  Camera as CameraIcon,
+  PlusCircle as PlusCircleIcon,
+  Download as DownloadIcon,
+  FileCheck2 as ApprovalIcon,
+} from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import DccaLogo from './assets/DCCA_Logo.png';
+import Tesseract from 'tesseract.js';
+import * as XLSX from 'xlsx';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
 
@@ -12,6 +36,22 @@ export default function App() {
     const [userRole, setUserRole] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState(false);
+    
+    // Move state from MainAppView to main App component
+    const [currentPage, setCurrentPage] = useState('inventory');
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [shipments, setShipments] = useState<Shipment[]>([]);
+    const [shipmentRequests, setShipmentRequests] = useState<ShipmentRequest[]>([]);
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+
+    useEffect(() => {
+        // Set initial page based on role
+        if (userRole === 'submitter') {
+            setCurrentPage('log_shipment');
+        } else {
+            setCurrentPage('inventory');
+        }
+    }, [userRole]);
 
     useEffect(() => {
         // Listen for auth changes first to avoid missing events
@@ -40,6 +80,13 @@ export default function App() {
 
         return () => subscription.unsubscribe();
     }, []);
+
+    // Load data when user changes
+    useEffect(() => {
+        if (user) {
+            loadData();
+        }
+    }, [user]);
 
     const fetchUserProfile = async (userId: string) => {
         try {
@@ -76,158 +123,6 @@ export default function App() {
         }
     };
 
-    if (authError) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-[#2c2c2e] text-[#8f8e94]">
-                <div className="text-center p-8 border border-[#3a3a3c] rounded-lg bg-[#3a3a3c] shadow-lg">
-                    <h1 className="text-2xl font-bold mb-2 text-white">Authentication Error</h1>
-                    <p>The application could not authenticate with Supabase.</p>
-                    <p>Please check your configuration.</p>
-                </div>
-            </div>
-        );
-    }
-
-    const handleSignOut = async () => {
-        try {
-            await supabase.auth.signOut();
-        } catch (error) {
-            console.error("Error signing out:", error);
-        }
-    };
-
-    if (isLoading) {
-        return <div className="flex items-center justify-center min-h-screen bg-[#3a3a3c]"><p className="text-[#8f8e94] animate-pulse text-lg">Loading Application...</p></div>;
-    }
-
-    if (!user) {
-        return <LoginScreen />;
-    }
-
-    return (
-        <AppLayout
-            user={user}
-            role={userRole}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            onSignOut={handleSignOut}
-            notification={notification}
-            setNotification={setNotification}
-            shipmentRequestsCount={shipmentRequests.length}
-        >
-            {/* ... keep existing code (page components) */}
-        </AppLayout>
-    );
-}
-
-// Login and Sign-up Screen Component
-function LoginScreen() {
-    const [isLoginView, setIsLoginView] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-
-    const handleAuthAction = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        
-        if (isLoginView) {
-            try {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-            } catch (err: any) {
-                setError(err.message);
-            }
-        } else {
-            try {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: `${window.location.origin}/`
-                    }
-                });
-                if (error) throw error;
-                setError('Check your email for the confirmation link!');
-            } catch (err: any) {
-                setError(err.message);
-            }
-        }
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-[#2c2c2e]">
-            <div className="p-8 bg-[#3a3a3c] rounded-lg shadow-2xl max-w-md w-full">
-                <img src={DccaLogo} alt="DomCast Logo" className="h-28 mx-auto mb-6" />
-                <div className="flex justify-center border-b border-[#48484a] mb-6">
-                    <button 
-                        onClick={() => setIsLoginView(true)} 
-                        className={`px-6 py-2 text-lg font-semibold ${isLoginView ? 'text-orange-500 border-b-2 border-orange-500' : 'text-[#8f8e94]'}`}
-                    >
-                        Login
-                    </button>
-                    <button 
-                        onClick={() => setIsLoginView(false)} 
-                        className={`px-6 py-2 text-lg font-semibold ${!isLoginView ? 'text-orange-500 border-b-2 border-orange-500' : 'text-[#8f8e94]'}`}
-                    >
-                        Sign Up
-                    </button>
-                </div>
-                <form onSubmit={handleAuthAction} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-[#8f8e94]">Email Address</label>
-                        <input 
-                            type="email" 
-                            value={email} 
-                            onChange={e => setEmail(e.target.value)} 
-                            required 
-                            className="mt-1 block w-full px-3 py-2 bg-[#48484a] border border-[#636267] rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 text-white"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[#8f8e94]">Password</label>
-                        <input 
-                            type="password" 
-                            value={password} 
-                            onChange={e => setPassword(e.target.value)} 
-                            required 
-                            className="mt-1 block w-full px-3 py-2 bg-[#48484a] border border-[#636267] rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 text-white"
-                        />
-                    </div>
-                    {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-                    <div>
-                        <button 
-                            type="submit" 
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#3a3a3c] focus:ring-orange-500"
-                        >
-                            {isLoginView ? 'Login' : 'Create Account'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-}
-
-// Main Application View Component
-function MainAppView({ user, role, onSignOut }: { user: User, role: string | null, onSignOut: () => void }) {
-    const [currentPage, setCurrentPage] = useState(role === 'submitter' ? 'log_shipment' : 'inventory');
-    const [inventory, setInventory] = useState<InventoryItem[]>([]);
-    const [shipments, setShipments] = useState<Shipment[]>([]);
-    const [shipmentRequests, setShipmentRequests] = useState<ShipmentRequest[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
-    const [isNavOpen, setIsNavOpen] = useState(false);
-
-    useEffect(() => {
-        if (user) {
-            loadData();
-        }
-    }, [user]);
-
     const loadData = async () => {
         setIsLoading(true);
         try {
@@ -250,7 +145,7 @@ function MainAppView({ user, role, onSignOut }: { user: User, role: string | nul
             setShipments(shipmentsData || []);
 
             // Load shipment requests (for admins)
-            if (role === 'admin') {
+            if (userRole === 'admin') {
                 const { data: requestsData, error: requestsError } = await supabase
                     .from('shipment_requests')
                     .select('*')
@@ -270,7 +165,7 @@ function MainAppView({ user, role, onSignOut }: { user: User, role: string | nul
     const handleLogShipment = async (shipmentDetails: any) => {
         const { items, shipmentId, type } = shipmentDetails;
         
-        if (role === 'submitter') {
+        if (userRole === 'submitter') {
             try {
                 const { error } = await supabase
                     .from('shipment_requests')
@@ -278,8 +173,8 @@ function MainAppView({ user, role, onSignOut }: { user: User, role: string | nul
                         shipment_id: shipmentId,
                         type,
                         items,
-                        requestor_id: user.id,
-                        requestor_email: user.email,
+                        requestor_id: user!.id,
+                        requestor_email: user!.email,
                         status: 'pending'
                     });
 
@@ -301,8 +196,8 @@ function MainAppView({ user, role, onSignOut }: { user: User, role: string | nul
                     shipment_id: shipmentId,
                     type,
                     items,
-                    user_id: user.id,
-                    user_email: user.email
+                    user_id: user!.id,
+                    user_email: user!.email
                 });
 
             if (error) throw error;
@@ -338,7 +233,7 @@ function MainAppView({ user, role, onSignOut }: { user: User, role: string | nul
                     items: request.items,
                     user_id: request.requestor_id,
                     user_email: request.requestor_email,
-                    approved_by: user.email
+                    approved_by: user!.email
                 });
 
             if (shipmentError) throw shipmentError;
@@ -390,125 +285,57 @@ function MainAppView({ user, role, onSignOut }: { user: User, role: string | nul
     const incomingShipments = shipments.filter(s => s.type === 'incoming');
     const outgoingShipments = shipments.filter(s => s.type === 'outgoing');
 
+    const handleSignOut = async () => {
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    };
+
+    if (authError) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-center p-8 border border-border rounded-lg bg-card shadow-lg">
+                    <h1 className="text-2xl font-bold mb-2">Authentication Error</h1>
+                    <p>The application could not authenticate with Supabase.</p>
+                    <p>Please check your configuration.</p>
+                </div>
+            </div>
+        );
+    }
+
     if (isLoading) {
-        return <div className="flex items-center justify-center min-h-screen bg-[#3a3a3c]"><p className="text-[#8f8e94] animate-pulse text-lg">Loading...</p></div>;
+        return <div className="flex items-center justify-center min-h-screen bg-background"><p className="text-muted-foreground animate-pulse text-lg">Loading Application...</p></div>;
+    }
+
+    if (!user) {
+        return <LoginScreen />;
     }
 
     return (
-        <div className="min-h-screen bg-[#2c2c2e] text-white">
-            {/* Navigation */}
-            <nav className="bg-[#3a3a3c] border-b border-[#48484a] px-4 py-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <img src={DccaLogo} alt="DomCast Logo" className="h-10" />
-                        <h1 className="text-xl font-bold">Inventory Management</h1>
-                    </div>
-                    <div className="hidden md:flex items-center space-x-6">
-                        {role !== 'submitter' && (
-                            <button
-                                onClick={() => setCurrentPage('inventory')}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-                                    currentPage === 'inventory' ? 'bg-orange-600 text-white' : 'text-[#8f8e94] hover:text-white'
-                                }`}
-                            >
-                                <InventoryIcon className="h-5 w-5" />
-                                <span>Inventory</span>
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setCurrentPage('log_shipment')}
-                            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-                                currentPage === 'log_shipment' ? 'bg-orange-600 text-white' : 'text-[#8f8e94] hover:text-white'
-                            }`}
-                        >
-                            <ShipmentIcon className="h-5 w-5" />
-                            <span>Log Shipment</span>
-                        </button>
-                        {role !== 'submitter' && (
-                            <>
-                                <button
-                                    onClick={() => setCurrentPage('incoming')}
-                                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-                                        currentPage === 'incoming' ? 'bg-orange-600 text-white' : 'text-[#8f8e94] hover:text-white'
-                                    }`}
-                                >
-                                    <IncomingIcon className="h-5 w-5" />
-                                    <span>Incoming</span>
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage('outgoing')}
-                                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-                                        currentPage === 'outgoing' ? 'bg-orange-600 text-white' : 'text-[#8f8e94] hover:text-white'
-                                    }`}
-                                >
-                                    <OutgoingIcon className="h-5 w-5" />
-                                    <span>Outgoing</span>
-                                </button>
-                            </>
-                        )}
-                        {role === 'admin' && (
-                            <button
-                                onClick={() => setCurrentPage('approval')}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-                                    currentPage === 'approval' ? 'bg-orange-600 text-white' : 'text-[#8f8e94] hover:text-white'
-                                }`}
-                            >
-                                <ApprovalIcon className="h-5 w-5" />
-                                <span>Approval</span>
-                                {shipmentRequests.length > 0 && (
-                                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
-                                        {shipmentRequests.length}
-                                    </span>
-                                )}
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <span className="text-sm text-[#8f8e94]">{user.email} ({role})</span>
-                        <button
-                            onClick={onSignOut}
-                            className="flex items-center space-x-2 px-3 py-2 bg-[#48484a] hover:bg-[#636267] rounded-lg transition"
-                        >
-                            <LogOutIcon className="h-4 w-4" />
-                            <span>Sign Out</span>
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-            {/* Main Content */}
-            <main className="container mx-auto px-4 py-8">
-                {currentPage === 'inventory' && <InventoryPage inventory={inventory} />}
-                {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={role} />}
-                {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" />}
-                {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" />}
-                {currentPage === 'approval' && role === 'admin' && (
-                    <ApprovalPage 
-                        requests={shipmentRequests} 
-                        onApprove={handleApproveShipment} 
-                        onReject={handleRejectShipment} 
-                    />
-                )}
-            </main>
-
-            {/* Notification */}
-            {notification.show && (
-                <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-                    notification.type === 'success' ? 'bg-green-600' : 
-                    notification.type === 'error' ? 'bg-red-600' : 'bg-yellow-600'
-                } text-white`}>
-                    <div className="flex items-center justify-between">
-                        <span>{notification.message}</span>
-                        <button
-                            onClick={() => setNotification({ ...notification, show: false })}
-                            className="ml-4 text-white hover:text-gray-200"
-                        >
-                            <XIcon className="h-4 w-4" />
-                        </button>
-                    </div>
-                </div>
+        <AppLayout
+            user={user}
+            role={userRole}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            onSignOut={handleSignOut}
+            notification={notification}
+            setNotification={setNotification}
+            shipmentRequestsCount={shipmentRequests.length}
+        >
+            {currentPage === 'inventory' && <InventoryPage inventory={inventory} />}
+            {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
+            {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" />}
+            {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" />}
+            {currentPage === 'approval' && userRole === 'admin' && (
+                <ApprovalPage 
+                    requests={shipmentRequests} 
+                    onApprove={handleApproveShipment} 
+                    onReject={handleRejectShipment} 
+                />
             )}
-        </div>
+        </AppLayout>
     );
 }
 
@@ -529,50 +356,52 @@ function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
                 <h2 className="text-2xl font-bold">Inventory</h2>
                 <div className="flex items-center space-x-4">
                     <div className="relative">
-                        <SearchIcon className="h-5 w-5 absolute left-3 top-3 text-[#8f8e94]" />
+                        <SearchIcon className="h-5 w-5 absolute left-3 top-3 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Search inventory..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 bg-[#3a3a3c] border border-[#48484a] rounded-lg text-white placeholder-[#8f8e94] focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="input pl-10"
                         />
                     </div>
                 </div>
             </div>
 
-            <div className="bg-[#3a3a3c] rounded-lg overflow-hidden">
+            <div className="card p-6">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-[#48484a]">
-                        <thead className="bg-[#48484a]">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
-                                    Item No.
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
-                                    Description
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#8f8e94] uppercase tracking-wider">
-                                    On Hand
-                                </th>
+                    <table className="min-w-full">
+                        <thead>
+                            <tr className="border-b border-border">
+                                <th className="text-left py-3 px-4 font-semibold">Item No</th>
+                                <th className="text-left py-3 px-4 font-semibold">Description</th>
+                                <th className="text-left py-3 px-4 font-semibold">Quantity</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-[#3a3a3c] divide-y divide-[#48484a]">
+                        <tbody>
                             {filteredInventory.map((item) => (
-                                <tr key={item.id} className="hover:bg-[#48484a]">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                                        {item.item_no}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-[#8f8e94]">
-                                        {item.description}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                                        {item.quantity}
+                                <tr key={item.id} className="border-b border-border hover:bg-muted/50">
+                                    <td className="py-3 px-4 font-mono text-sm">{item.item_no}</td>
+                                    <td className="py-3 px-4">{item.description}</td>
+                                    <td className="py-3 px-4">
+                                        <span className={`font-semibold ${
+                                            item.quantity < 10 ? 'text-destructive' : 
+                                            item.quantity < 50 ? 'text-warning' : 'text-foreground'
+                                        }`}>
+                                            {item.quantity}
+                                        </span>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                    
+                    {filteredInventory.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <InventoryIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No inventory items found</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
