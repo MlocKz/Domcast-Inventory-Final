@@ -9,6 +9,7 @@ interface AppLayoutProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   onSignOut: () => void;
+  onRefreshProfile: () => void;
   notification: { show: boolean; message: string; type: string };
   setNotification: (notification: { show: boolean; message: string; type: string }) => void;
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export function AppLayout({
   currentPage,
   setCurrentPage,
   onSignOut,
+  onRefreshProfile,
   notification,
   setNotification,
   children
@@ -32,6 +34,7 @@ export function AppLayout({
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         onSignOut={onSignOut}
+        onRefreshProfile={onRefreshProfile}
       />
       
       <main className="container mx-auto px-6 py-12">

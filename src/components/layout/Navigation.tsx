@@ -12,7 +12,8 @@ import {
   Settings as SettingsIcon,
   Mail as MailIcon,
   Key as KeyIcon,
-  ChevronDown
+  ChevronDown,
+  RefreshCw as RefreshIcon
 } from 'lucide-react';
 import DccaLogo from '../../assets/DCCA_Logo.png';
 import { User } from '../../lib/supabase';
@@ -23,6 +24,7 @@ interface NavigationProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   onSignOut: () => void;
+  onRefreshProfile: () => void;
 }
 
 const navigationItems = [
@@ -39,7 +41,8 @@ export function Navigation({
   role,
   currentPage,
   setCurrentPage,
-  onSignOut
+  onSignOut,
+  onRefreshProfile
 }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -123,6 +126,17 @@ export function Navigation({
                       <p className="font-medium text-foreground">{user.email}</p>
                       <p className="text-xs capitalize">{role} account</p>
                     </div>
+                    
+                    <button
+                      onClick={() => {
+                        onRefreshProfile();
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-gradient-accent rounded-lg transition-colors"
+                    >
+                      <RefreshIcon className="h-4 w-4" />
+                      <span>Refresh Profile</span>
+                    </button>
                     
                     <button
                       onClick={() => {

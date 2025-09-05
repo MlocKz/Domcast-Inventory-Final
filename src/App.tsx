@@ -95,6 +95,28 @@ export default function App() {
         }
     }, [user]);
 
+    // Periodically check for role updates every 30 seconds
+    useEffect(() => {
+        if (!user) return;
+
+        const interval = setInterval(() => {
+            fetchUserProfile(user.id);
+        }, 30000); // Check every 30 seconds
+
+        return () => clearInterval(interval);
+    }, [user]);
+
+    const refreshProfile = async () => {
+        if (user) {
+            await fetchUserProfile(user.id);
+            setNotification({
+                show: true,
+                message: 'Profile refreshed successfully',
+                type: 'success'
+            });
+        }
+    };
+
     const fetchUserProfile = async (userId: string) => {
         try {
             const { data, error } = await supabase
@@ -297,6 +319,7 @@ export default function App() {
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
             onSignOut={handleSignOut}
+            onRefreshProfile={refreshProfile}
             notification={notification}
             setNotification={setNotification}
         >
