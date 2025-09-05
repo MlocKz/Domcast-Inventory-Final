@@ -36,22 +36,26 @@ export default function App() {
     const [authError, setAuthError] = useState(false);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        // Listen for auth changes first to avoid missing events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            // Only synchronous updates here to avoid deadlocks
+            setUser(session?.user ?? null);
             if (session?.user) {
-                fetchUserProfile(session.user.id);
+                setTimeout(() => {
+                    fetchUserProfile(session.user!.id);
+                }, 0);
             } else {
+                setUserRole(null);
                 setIsLoading(false);
             }
         });
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // Then check for existing session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
             if (session?.user) {
-                await fetchUserProfile(session.user.id);
+                fetchUserProfile(session.user.id);
             } else {
-                setUser(null);
-                setUserRole(null);
                 setIsLoading(false);
             }
         });
@@ -65,14 +69,20 @@ export default function App() {
                 .from('users')
                 .select('*')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error('Error fetching user profile:', error);
                 setAuthError(true);
+                return;
+            }
+
+            if (data) {
+                setUser(data as any);
+                setUserRole((data as any).role ?? null);
             } else {
-                setUser(data);
-                setUserRole(data.role);
+                setUser(null);
+                setUserRole(null);
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
