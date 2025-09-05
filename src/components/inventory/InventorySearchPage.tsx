@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SearchIcon, PackageIcon, AlertCircle } from 'lucide-react';
+import { SearchIcon, PackageIcon, AlertCircle, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InventoryItem {
@@ -95,6 +95,60 @@ export function InventorySearchPage() {
     });
   };
 
+  const exportToCSV = () => {
+    const headers = [
+      'SKU',
+      'Name',
+      'Category',
+      'Quantity on Hand',
+      'Minimum Quantity',
+      'Unit of Measure',
+      'Location',
+      'Unit Cost',
+      'Sell Price',
+      'External ID',
+      'Notes',
+      'Status',
+      'Created At',
+      'Updated At'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...filteredInventory.map(item => {
+        const status = item.qty_on_hand === 0 ? 'Out of Stock' :
+                      item.qty_on_hand <= (item.min_qty || 0) ? 'Low Stock' : 'In Stock';
+        
+        return [
+          `"${item.sku}"`,
+          `"${item.name || ''}"`,
+          `"${item.category || ''}"`,
+          item.qty_on_hand,
+          item.min_qty || 0,
+          `"${item.uom || ''}"`,
+          `"${item.location || ''}"`,
+          item.unit_cost || '',
+          item.sell_price || '',
+          `"${item.external_id || ''}"`,
+          `"${(item.notes || '').replace(/"/g, '""')}"`,
+          `"${status}"`,
+          `"${new Date(item.created_at).toLocaleString()}"`,
+          `"${new Date(item.updated_at).toLocaleString()}"`
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `inventory-export-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredInventory = useMemo(() => {
     if (!searchTerm.trim()) return inventory;
     
@@ -145,6 +199,13 @@ export function InventorySearchPage() {
             {filteredInventory.length} items {searchTerm && `(filtered from ${inventory.length})`}
           </p>
         </div>
+        <button
+          onClick={exportToCSV}
+          className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <Download className="h-5 w-5" />
+          Export CSV
+        </button>
       </div>
 
       {/* Search Box */}
