@@ -53,9 +53,7 @@ export function InventorySearchPage() {
     const search = searchTerm.toLowerCase();
     return inventory.filter(item => 
       item.sku.toLowerCase().includes(search) ||
-      (item.name && item.name.toLowerCase().includes(search)) ||
-      (item.category && item.category.toLowerCase().includes(search)) ||
-      (item.location && item.location.toLowerCase().includes(search))
+      (item.name && item.name.toLowerCase().includes(search))
     );
   }, [inventory, searchTerm]);
 
@@ -104,7 +102,7 @@ export function InventorySearchPage() {
         <SearchIcon className="h-5 w-5 absolute left-3 top-3 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search by SKU, name, category, or location..."
+          placeholder="Search by SKU or name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -114,39 +112,35 @@ export function InventorySearchPage() {
       {/* Inventory Table */}
       <div className="bg-card rounded-lg border border-border shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="text-left py-3 px-4 font-semibold text-foreground">SKU</th>
-                <th className="text-left py-3 px-4 font-semibold text-foreground">Name</th>
-                <th className="text-left py-3 px-4 font-semibold text-foreground">Category</th>
-                <th className="text-right py-3 px-4 font-semibold text-foreground">Qty on Hand</th>
-                <th className="text-left py-3 px-4 font-semibold text-foreground">UOM</th>
-                <th className="text-left py-3 px-4 font-semibold text-foreground">Location</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">SKU</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Name</th>
+                <th className="text-center py-4 px-4 font-semibold text-foreground">Quantity</th>
               </tr>
             </thead>
             <tbody>
               {filteredInventory.map((item) => (
                 <tr key={item.sku} className="border-b border-border hover:bg-muted/25 transition-colors">
-                  <td className="py-3 px-4 font-mono text-sm font-medium text-foreground">{item.sku}</td>
-                  <td className="py-3 px-4 text-foreground">{item.name}</td>
-                  <td className="py-3 px-4 text-muted-foreground">
-                    {item.category || <span className="italic">-</span>}
+                  <td className="py-4 px-4">
+                    <div className="font-mono text-base font-bold text-foreground">
+                      {item.sku}
+                    </div>
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className={`font-semibold ${
+                  <td className="py-4 px-4">
+                    <div className="text-foreground font-medium">
+                      {item.name}
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 text-center">
+                    <div className={`text-xl font-bold ${
                       item.qty_on_hand === 0 ? 'text-destructive' :
                       item.qty_on_hand < 10 ? 'text-orange-500' : 
                       item.qty_on_hand < 50 ? 'text-yellow-600' : 'text-green-600'
                     }`}>
                       {item.qty_on_hand.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground font-mono text-xs">
-                    {item.uom}
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground">
-                    {item.location || <span className="italic">-</span>}
+                    </div>
                   </td>
                 </tr>
               ))}
