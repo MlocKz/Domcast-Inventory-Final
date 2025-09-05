@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -7,69 +7,45 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Get auth header
-    const authorization = req.headers.get('Authorization')
-    
-    if (authorization) {
+    const authHeader = req.headers.get('Authorization')
+    if (authHeader) {
       supabaseClient.auth.setSession({
-        access_token: authorization.replace('Bearer ', ''),
-        refresh_token: '',
-      } as any)
+        access_token: authHeader.replace('Bearer ', ''),
+        refresh_token: ''
+      })
     }
 
-    if (req.method === 'GET') {
-      // Get all inventory items ordered by SKU
-      const { data, error } = await supabaseClient
-        .from('inventory')
-        .select('*')
-        .order('sku')
+    const { data, error } = await supabaseClient
+      .from('inventory')
+      .select('*')
+      .order('sku')
 
-      if (error) {
-        throw error
-      }
-
+    if (error) {
       return new Response(
-        JSON.stringify({ data }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
+        JSON.stringify({ error: error.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 405,
-      }
+      JSON.stringify({ data }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

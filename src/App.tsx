@@ -340,30 +340,47 @@ export default function App() {
     );
 }
 
-// Simple Inventory Page
+// Enhanced Inventory Page with better search and display
 function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredInventory = useMemo(() => {
+        if (!searchTerm.trim()) return inventory;
+        
+        const search = searchTerm.toLowerCase();
         return inventory.filter(item =>
-            item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+            (item.sku && item.sku.toLowerCase().includes(search)) ||
+            (item.name && item.name.toLowerCase().includes(search)) ||
+            (item.category && item.category.toLowerCase().includes(search)) ||
+            (item.location && item.location.toLowerCase().includes(search))
         );
     }, [inventory, searchTerm]);
+
+    const totalItems = inventory.length;
+    const filteredCount = filteredInventory.length;
+    const lowStockItems = inventory.filter(item => item.qty_on_hand < 10).length;
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Inventory</h2>
+                <div>
+                    <h2 className="text-2xl font-bold text-foreground">Inventory</h2>
+                    <p className="text-muted-foreground">
+                        Showing {filteredCount} of {totalItems} items
+                        {lowStockItems > 0 && (
+                            <span className="ml-2 text-destructive">• {lowStockItems} low stock</span>
+                        )}
+                    </p>
+                </div>
                 <div className="flex items-center space-x-4">
                     <div className="relative">
                         <SearchIcon className="h-5 w-5 absolute left-3 top-3 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Search inventory..."
+                            placeholder="Search by SKU, name, category, or location..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-80"
                         />
                     </div>
                 </div>
@@ -374,33 +391,52 @@ function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
                     <table className="min-w-full text-sm">
                         <thead>
                             <tr className="border-b border-border">
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">Item No</th>
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">Description</th>
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">Quantity</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">SKU</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">Name</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">Category</th>
+                                <th className="text-right py-3 px-4 font-semibold text-foreground">Qty on Hand</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">UOM</th>
+                                <th className="text-left py-3 px-4 font-semibold text-foreground">Location</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredInventory.map((item) => (
-                                <tr key={item.sku} className="border-b border-border hover:bg-muted/50">
-                                    <td className="py-3 px-4 font-mono text-sm text-foreground">{item.sku}</td>
+                                <tr key={item.sku} className="border-b border-border hover:bg-muted/50 transition-colors">
+                                    <td className="py-3 px-4 font-mono text-sm text-foreground font-medium">{item.sku}</td>
                                     <td className="py-3 px-4 text-foreground">{item.name}</td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-3 px-4 text-muted-foreground">{item.category || '-'}</td>
+                                    <td className="py-3 px-4 text-right">
                                         <span className={`font-semibold ${
-                                            item.qty_on_hand < 10 ? 'text-red-500' : 
-                                            item.qty_on_hand < 50 ? 'text-yellow-500' : 'text-green-500'
+                                            item.qty_on_hand < 10 ? 'text-destructive' : 
+                                            item.qty_on_hand < 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
                                         }`}>
-                                            {item.qty_on_hand}
+                                            {item.qty_on_hand.toLocaleString()}
                                         </span>
                                     </td>
+                                    <td className="py-3 px-4 text-muted-foreground">{item.uom}</td>
+                                    <td className="py-3 px-4 text-muted-foreground">{item.location || '-'}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                     
-                    {filteredInventory.length === 0 && (
+                    {filteredInventory.length === 0 && searchTerm && (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <SearchIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No inventory items found matching "{searchTerm}"</p>
+                            <button 
+                                onClick={() => setSearchTerm('')}
+                                className="mt-2 text-primary hover:underline"
+                            >
+                                Clear search
+                            </button>
+                        </div>
+                    )}
+                    
+                    {filteredInventory.length === 0 && !searchTerm && (
                         <div className="text-center py-12 text-muted-foreground">
                             <InventoryIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No inventory items found</p>
+                            <p>No inventory items available</p>
                         </div>
                     )}
                 </div>
