@@ -66,7 +66,7 @@ export default function App() {
     const fetchUserProfile = async (userId: string) => {
         try {
             const { data, error } = await supabase
-                .from('users')
+                .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .maybeSingle();
