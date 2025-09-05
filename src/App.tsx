@@ -679,7 +679,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                                         setCurrentItem(null);
                                     }}
                                     placeholder="Start typing SKU or description..."
-                                    className="input pl-8 text-lg relative z-10"
+                                    className="input pl-6 text-lg relative z-10"
                                 />
                                 {filteredItems.length > 0 && !currentItem && (
                                     <ul className="absolute z-50 w-full bg-card border border-border mt-2 rounded-xl shadow-elegant max-h-80 overflow-auto">
