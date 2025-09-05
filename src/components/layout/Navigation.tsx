@@ -107,18 +107,11 @@ export function Navigation({
             <div className="relative profile-dropdown-container">
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="hidden sm:flex items-center space-x-3 bg-gradient-accent rounded-xl p-3 backdrop-blur-sm hover:bg-gradient-primary transition-all duration-300 group"
+                className="hidden sm:flex items-center justify-center w-10 h-10 bg-gradient-accent rounded-full backdrop-blur-sm hover:bg-gradient-primary transition-all duration-300 group"
               >
-                <div className="flex items-center space-x-3 text-sm">
-                  <div className="relative">
-                    <UserIcon className="h-5 w-5 text-primary group-hover:text-primary-foreground" />
-                    <div className="absolute -inset-1 bg-primary opacity-20 blur rounded-full"></div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-foreground group-hover:text-primary-foreground">{user.email}</p>
-                    <p className="text-xs text-muted-foreground group-hover:text-primary-foreground/80 capitalize font-medium">{role} access</p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-primary-foreground transition-transform group-hover:rotate-180" />
+                <div className="relative">
+                  <UserIcon className="h-5 w-5 text-primary group-hover:text-primary-foreground" />
+                  <div className="absolute -inset-1 bg-primary opacity-20 blur rounded-full"></div>
                 </div>
               </button>
 
