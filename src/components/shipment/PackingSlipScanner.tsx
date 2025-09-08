@@ -117,22 +117,36 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
     const items: ExtractedItem[] = [];
     let shipmentId = '';
     
-    // Patterns for shipment/packing slip numbers
+    // Patterns for shipment/packing slip numbers - prioritize numeric IDs
     const shipmentPatterns = [
-      /(?:packing\s*slip|shipment|order|invoice|po|purchase\s*order)[\s#:]*([A-Z0-9\-]+)/i,
-      /(?:^|\s)([A-Z]{2,}\d{6,}|\d{8,}|[A-Z0-9]{8,})(?:\s|$)/i,
-      /(?:ref|reference|tracking|number)[\s#:]*([A-Z0-9\-]+)/i
+      // Look for 6-10 digit numbers (like 20250440)
+      /(?:packing\s*slip|shipment|order|invoice|po|purchase\s*order)[\s#:]*(\d{6,10})/i,
+      // Standalone 8+ digit numbers that look like IDs
+      /(?:^|\s)(\d{8,10})(?:\s|$)/,
+      // Numbers with prefixes like PS123456, SH123456
+      /(?:PS|SH|PO|INV)[\s#:]*(\d{6,10})/i,
+      // General pattern for reference numbers
+      /(?:ref|reference|tracking|number)[\s#:]*(\d{6,10})/i,
+      // Fallback for any alphanumeric after common keywords
+      /(?:packing\s*slip|shipment|order)[\s#:]*([A-Z0-9]{6,12})/i
     ];
 
-    // Extract shipment ID first
+    // Extract shipment ID first - prioritize longer numeric matches
     for (const line of lines) {
       if (shipmentId) break;
       
       for (const pattern of shipmentPatterns) {
         const match = line.match(pattern);
-        if (match && match[1] && match[1].length >= 4) {
-          shipmentId = match[1].trim();
-          break;
+        if (match && match[1] && match[1].length >= 6) {
+          // Prefer numeric IDs over alphanumeric
+          const candidate = match[1].trim();
+          if (/^\d+$/.test(candidate) && candidate.length >= 6) {
+            shipmentId = candidate;
+            break;
+          } else if (!shipmentId && candidate.length >= 6) {
+            // Keep as fallback if no numeric ID found
+            shipmentId = candidate;
+          }
         }
       }
     }
