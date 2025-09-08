@@ -665,9 +665,9 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                         <button
                             type="button"
                             onClick={() => setShowScanner(true)}
-                            className="btn-secondary flex items-center space-x-2"
+                            className="px-6 py-3 bg-gradient-primary text-primary-foreground rounded-xl font-semibold transition-all duration-200 hover:opacity-90 hover:scale-105 hover:shadow-glow flex items-center space-x-3 shadow-md"
                         >
-                            <CameraIcon className="h-4 w-4" />
+                            <CameraIcon className="h-5 w-5" />
                             <span>Scan Packing Slip</span>
                         </button>
                     </div>
