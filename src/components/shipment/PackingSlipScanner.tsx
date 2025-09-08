@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Camera as CameraIcon, Upload as UploadIcon, X as XIcon, Check as CheckIcon, AlertTriangle } from 'lucide-react';
 import Tesseract from 'tesseract.js';
+import heic2any from 'heic2any';
 
 interface ExtractedItem {
   sku: string;
@@ -23,16 +24,69 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const MAX_DIMENSION = 2000;
+
+  const blobToJpegDataUrl = async (blob: Blob): Promise<string> => {
+    // Draw to canvas and export as JPEG to normalize format for Tesseract
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = url;
+      });
+
+      let { width, height } = img;
+      const scale = Math.min(1, MAX_DIMENSION / Math.max(width, height));
+      if (scale < 1) {
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      return dataUrl;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const ensureJpegDataUrl = async (file: File): Promise<string> => {
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || /\.heic$/i.test(file.name);
+    let workingBlob: Blob = file;
+
+    if (isHeic) {
+      try {
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+        workingBlob = Array.isArray(converted) ? converted[0] : (converted as Blob);
+      } catch (e) {
+        console.error('HEIC conversion failed:', e);
+        throw new Error('Unsupported HEIC image. Please use JPG or PNG, or retake the photo as “Most Compatible” in camera settings.');
+      }
+    }
+
+    // Normalize any image (including JPEG/PNG) through canvas to avoid decoder issues
+    return await blobToJpegDataUrl(workingBlob);
+  };
+
   const processImage = async (file: File) => {
     setIsProcessing(true);
     setError(null);
     setProgress(0);
 
     try {
-      const result = await Tesseract.recognize(file, 'eng', {
+      const dataUrl = await ensureJpegDataUrl(file);
+
+      const result = await Tesseract.recognize(dataUrl, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            setProgress(Math.round(m.progress * 100));
+            setProgress(Math.round((m.progress || 0) * 100));
           }
         }
       });
@@ -46,9 +100,9 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
         setExtractedItems(items);
         setShowResults(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('OCR Error:', err);
-      setError('Failed to process the image. Please try again or enter items manually.');
+      setError(err?.message || 'Failed to process the image. Please try again or enter items manually.');
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -286,7 +340,12 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
 
             <div className="space-y-3">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.setAttribute('capture', 'environment');
+                    fileInputRef.current.click();
+                  }
+                }}
                 className="w-full btn-primary py-4 text-lg"
               >
                 <CameraIcon className="h-6 w-6 mr-3" />
