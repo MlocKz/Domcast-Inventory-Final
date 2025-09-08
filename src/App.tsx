@@ -35,6 +35,7 @@ import { UserManagementPage } from './components/admin/UserManagementPage';
 import { AccountSettingsPage } from './components/account/AccountSettingsPage';
 import { ChangeEmailPage } from './components/account/ChangeEmailPage';
 import { ChangePasswordPage } from './components/account/ChangePasswordPage';
+import { PackingSlipScanner } from './components/shipment/PackingSlipScanner';
 
 const supabase = _supabase as any;
 
@@ -445,6 +446,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
     const [error, setError] = useState('');
     const [existingShipmentIds, setExistingShipmentIds] = useState<string[]>([]);
     const [isDuplicateId, setIsDuplicateId] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
 
     // Load existing shipment IDs
     useEffect(() => {
@@ -536,6 +538,14 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
         setShipmentItems([]);
         setError('');
         setIsDuplicateId(false);
+    };
+
+    const handlePackingSlipItems = (items: Array<{ itemNo: string; description: string; quantity: number }>) => {
+        // Add all extracted items to the shipment
+        const newItems = items.filter(item => 
+            !shipmentItems.some(existing => existing.itemNo === item.itemNo)
+        );
+        setShipmentItems(prev => [...prev, ...newItems]);
     };
 
     return (
@@ -642,9 +652,19 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
                 {/* Add Items Card */}
                 <div className="card p-8 animate-scale-in overflow-visible relative z-50" style={{ animationDelay: '0.1s' }}>
-                    <div className="flex items-center space-x-3 mb-6">
-                        <PlusCircleIcon className="h-6 w-6 text-primary" />
-                        <h3 className="text-2xl font-semibold text-foreground">Add Items</h3>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                            <PlusCircleIcon className="h-6 w-6 text-primary" />
+                            <h3 className="text-2xl font-semibold text-foreground">Add Items</h3>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowScanner(true)}
+                            className="btn-secondary flex items-center space-x-2"
+                        >
+                            <CameraIcon className="h-4 w-4" />
+                            <span>Scan Packing Slip</span>
+                        </button>
                     </div>
                     
                     <div className="space-y-6">
@@ -804,6 +824,15 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
                     </button>
                 </div>
             </form>
+
+            {/* Packing Slip Scanner */}
+            {showScanner && (
+                <PackingSlipScanner
+                    onItemsExtracted={handlePackingSlipItems}
+                    inventory={inventory}
+                    onClose={() => setShowScanner(false)}
+                />
+            )}
         </div>
     );
 }
