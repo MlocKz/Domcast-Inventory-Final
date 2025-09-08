@@ -116,6 +116,10 @@ export default {
       transitionTimingFunction: {
         'bounce-gentle': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
+      screens: {
+        'xs': '475px',
+        'mobile-only': {'max': '767px'},
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

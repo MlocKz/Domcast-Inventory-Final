@@ -84,6 +84,11 @@
     border-color: hsl(var(--border));
   }
   
+  html {
+    background: hsl(var(--background));
+    overflow-x: hidden;
+  }
+  
   body {
     background: var(--gradient-card);
     color: hsl(var(--foreground));
@@ -92,6 +97,28 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1.6;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+    /* Prevent white flash on mobile when swiping */
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
+  }
+  
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    background: var(--gradient-card);
+  }
+  
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    body {
+      /* Improve touch scrolling */
+      -webkit-overflow-scrolling: touch;
+      /* Prevent zoom on input focus */
+      touch-action: manipulation;
+    }
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -146,6 +173,21 @@
     cursor: pointer;
     color: hsl(var(--foreground));
     overflow: hidden;
+    /* Better touch targets for mobile */
+    min-height: 44px; /* iOS recommended touch target size */
+    user-select: none;
+    -webkit-user-select: none;
+    /* Improve touch responsiveness */
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mobile-specific button improvements */
+  @media (max-width: 768px) {
+    .btn {
+      padding: 1rem 1.5rem;
+      min-height: 48px; /* Better mobile touch target */
+      font-size: 1rem; /* Prevent zoom on focus */
+    }
   }
   
   .btn::before {
@@ -239,6 +281,18 @@
     font-size: 0.875rem;
     transition: var(--transition-fast);
     color: hsl(var(--foreground));
+    /* Better mobile input handling */
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mobile-specific input improvements */
+  @media (max-width: 768px) {
+    .input {
+      height: 3rem;
+      font-size: 16px; /* Prevent zoom on iOS */
+      padding: 1rem;
+    }
   }
   
   .input::placeholder {
@@ -351,5 +405,67 @@
   
   label {
     color: hsl(var(--foreground));
+  }
+  
+  /* Mobile-specific improvements */
+  @media (max-width: 768px) {
+    /* Improve mobile navigation */
+    .nav-item {
+      padding: 1rem;
+      font-size: 1rem;
+      min-height: 48px;
+    }
+    
+    /* Better mobile cards */
+    .card {
+      margin-bottom: 1rem;
+    }
+    
+    /* Smooth animations on mobile */
+    .card:hover {
+      transform: none; /* Disable hover animations on mobile */
+    }
+    
+    .btn:hover {
+      transform: none; /* Disable hover animations on mobile */
+    }
+    
+    /* Improve scroll behavior */
+    .overflow-x-auto {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-track {
+      background: hsl(var(--background));
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted));
+      border-radius: 2px;
+    }
+  }
+  
+  /* Touch-friendly scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
   }
 }

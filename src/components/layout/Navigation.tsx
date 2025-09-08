@@ -191,7 +191,7 @@ export function Navigation({
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden btn-ghost p-3 relative"
+              className="md:hidden btn-ghost p-3 relative min-h-[48px] min-w-[48px] flex items-center justify-center"
             >
               <div className="relative">
                 {isMobileMenuOpen ? (
@@ -206,8 +206,8 @@ export function Navigation({
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-6 border-t border-border animate-slide-in bg-gradient-accent rounded-b-xl">
-            <div className="space-y-3">
+          <div className="md:hidden py-6 border-t border-border animate-slide-in bg-gradient-accent rounded-b-xl backdrop-blur-xl">
+            <div className="space-y-2">
               {filteredNavItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
@@ -220,16 +220,16 @@ export function Navigation({
                       setIsMobileMenuOpen(false);
                     }}
                     className={`
-                      w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-sm font-semibold 
-                      transition-all duration-300 justify-start group animate-fade-in
+                      w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-base font-semibold 
+                      transition-all duration-300 justify-start group animate-fade-in min-h-[56px]
                       ${isActive 
-                        ? 'bg-gradient-primary text-primary-foreground shadow-glow' 
-                        : 'text-muted-foreground hover:bg-gradient-accent hover:text-foreground'
+                        ? 'bg-gradient-primary text-primary-foreground shadow-glow mx-2' 
+                        : 'text-muted-foreground hover:bg-gradient-primary/20 hover:text-foreground mx-2'
                       }
                     `}
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <Icon className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
+                    <Icon className="h-6 w-6 flex-shrink-0 transition-transform group-hover:scale-110" />
                     <span className="flex-shrink-0">{item.label}</span>
                   </button>
                 );
