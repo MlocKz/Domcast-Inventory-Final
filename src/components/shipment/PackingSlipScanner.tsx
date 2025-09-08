@@ -11,7 +11,7 @@ interface ExtractedItem {
 }
 
 interface PackingSlipScannerProps {
-  onItemsExtracted: (items: Array<{ itemNo: string; description: string; quantity: number }>) => void;
+  onItemsExtracted: (items: Array<{ itemNo: string; description: string; quantity: number }>, shipmentId?: string) => void;
   inventory: Array<{ sku: string; name: string; qty_on_hand: number }>;
   onClose: () => void;
 }
@@ -19,6 +19,7 @@ interface PackingSlipScannerProps {
 export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: PackingSlipScannerProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
+  const [extractedShipmentId, setExtractedShipmentId] = useState<string>('');
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -92,7 +93,9 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
       });
 
       const extractedText = result.data.text;
-      const items = parsePackingSlipText(extractedText);
+      const { items, shipmentId } = parsePackingSlipText(extractedText);
+      
+      setExtractedShipmentId(shipmentId);
       
       if (items.length === 0) {
         setError('No items could be extracted from the image. Please try a clearer image or enter items manually.');
@@ -109,9 +112,30 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
     }
   };
 
-  const parsePackingSlipText = (text: string): ExtractedItem[] => {
+  const parsePackingSlipText = (text: string): { items: ExtractedItem[], shipmentId: string } => {
     const lines = text.split('\n').filter(line => line.trim());
     const items: ExtractedItem[] = [];
+    let shipmentId = '';
+    
+    // Patterns for shipment/packing slip numbers
+    const shipmentPatterns = [
+      /(?:packing\s*slip|shipment|order|invoice|po|purchase\s*order)[\s#:]*([A-Z0-9\-]+)/i,
+      /(?:^|\s)([A-Z]{2,}\d{6,}|\d{8,}|[A-Z0-9]{8,})(?:\s|$)/i,
+      /(?:ref|reference|tracking|number)[\s#:]*([A-Z0-9\-]+)/i
+    ];
+
+    // Extract shipment ID first
+    for (const line of lines) {
+      if (shipmentId) break;
+      
+      for (const pattern of shipmentPatterns) {
+        const match = line.match(pattern);
+        if (match && match[1] && match[1].length >= 4) {
+          shipmentId = match[1].trim();
+          break;
+        }
+      }
+    }
     
     // Common patterns for packing slips
     const itemPatterns = [
@@ -127,7 +151,7 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
       const cleanLine = line.trim();
       
       // Skip headers and common non-item lines
-      if (cleanLine.match(/^(item|sku|product|description|qty|quantity|total|subtotal|shipping|tax)/i)) {
+      if (cleanLine.match(/^(item|sku|product|description|qty|quantity|total|subtotal|shipping|tax|packing|slip|order|date)/i)) {
         continue;
       }
 
@@ -173,7 +197,7 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
       index === self.findIndex(t => t.sku === item.sku)
     );
 
-    return uniqueItems;
+    return { items: uniqueItems, shipmentId };
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +214,7 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
       quantity: item.quantity
     }));
     
-    onItemsExtracted(confirmedItems);
+    onItemsExtracted(confirmedItems, extractedShipmentId);
     onClose();
   };
 
@@ -217,6 +241,19 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
               <XIcon className="h-5 w-5" />
             </button>
           </div>
+
+          {/* Show extracted shipment ID if found */}
+          {extractedShipmentId && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <CheckIcon className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-200">Shipment ID Found</p>
+                  <p className="text-lg font-mono text-green-700 dark:text-green-300">{extractedShipmentId}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {extractedItems.length === 0 ? (
             <div className="text-center py-8">

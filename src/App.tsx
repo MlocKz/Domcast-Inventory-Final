@@ -540,12 +540,17 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
         setIsDuplicateId(false);
     };
 
-    const handlePackingSlipItems = (items: Array<{ itemNo: string; description: string; quantity: number }>) => {
+    const handlePackingSlipItems = (items: Array<{ itemNo: string; description: string; quantity: number }>, shipmentId?: string) => {
         // Add all extracted items to the shipment
         const newItems = items.filter(item => 
             !shipmentItems.some(existing => existing.itemNo === item.itemNo)
         );
         setShipmentItems(prev => [...prev, ...newItems]);
+        
+        // Set the shipment ID if extracted
+        if (shipmentId && shipmentId.trim()) {
+            setShipmentId(shipmentId.trim());
+        }
     };
 
     return (
