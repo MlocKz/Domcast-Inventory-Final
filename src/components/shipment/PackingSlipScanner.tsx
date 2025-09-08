@@ -397,7 +397,7 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
                     fileInputRef.current.click();
                   }
                 }}
-                className="w-full btn-primary py-4 text-lg"
+                className="w-full flex items-center justify-center px-6 py-4 rounded-xl bg-gradient-primary text-primary-foreground font-semibold text-lg hover:opacity-90 transition-opacity"
               >
                 <CameraIcon className="h-6 w-6 mr-3" />
                 Take Photo
@@ -410,7 +410,7 @@ export function PackingSlipScanner({ onItemsExtracted, inventory, onClose }: Pac
                     fileInputRef.current.click();
                   }
                 }}
-                className="w-full btn-secondary py-4 text-lg"
+                className="w-full flex items-center justify-center px-6 py-4 rounded-xl bg-secondary text-secondary-foreground font-semibold text-lg hover:opacity-90 transition-opacity border border-border"
               >
                 <UploadIcon className="h-6 w-6 mr-3" />
                 Upload Image

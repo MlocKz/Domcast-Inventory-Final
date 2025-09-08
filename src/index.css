@@ -223,12 +223,12 @@
   }
   
   .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    box-shadow: var(--shadow-md);
+    opacity: 0.9;
   }
   
   .btn-primary:active {
-    transform: translateY(0);
+    transform: scale(0.98);
   }
   
   .btn-secondary {
@@ -240,8 +240,7 @@
   
   .btn-secondary:hover {
     background: hsl(var(--secondary) / 0.8);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    opacity: 0.9;
   }
   
   .btn-outline {
@@ -255,7 +254,6 @@
     background: var(--gradient-accent);
     border-color: hsl(var(--primary) / 0.5);
     color: hsl(var(--primary));
-    transform: translateY(-1px);
   }
   
   .btn-ghost {
@@ -266,7 +264,6 @@
   .btn-ghost:hover {
     background: var(--gradient-accent);
     color: hsl(var(--foreground));
-    transform: translateY(-1px);
   }
   
   .input {
@@ -303,7 +300,6 @@
     outline: none;
     border-color: hsl(var(--primary));
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
-    transform: translateY(-1px);
   }
   
   .input:disabled {
@@ -334,7 +330,6 @@
   }
   
   .card:hover {
-    transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
   
@@ -368,7 +363,6 @@
   .nav-item:hover {
     background: var(--gradient-accent);
     color: hsl(var(--foreground));
-    transform: translateY(-1px);
   }
   
   .nav-item:hover::before {
@@ -386,8 +380,7 @@
   }
   
   .nav-item-active:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-glow), var(--shadow-md);
+    box-shadow: var(--shadow-md);
   }
   
   /* Fix text color for specific elements */
