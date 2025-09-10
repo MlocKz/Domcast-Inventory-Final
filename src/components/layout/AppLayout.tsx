@@ -21,6 +21,7 @@ interface AppLayoutProps {
   setCurrentPage: (page: string) => void;
   onSignOut: () => void;
   onRefreshProfile: () => void;
+  onExportCSV?: () => void;
   notification: { show: boolean; message: string; type: string };
   setNotification: (notification: { show: boolean; message: string; type: string }) => void;
   children: React.ReactNode;
@@ -141,6 +142,7 @@ export function AppLayout({
   setCurrentPage,
   onSignOut,
   onRefreshProfile,
+  onExportCSV,
   notification,
   setNotification,
   children
@@ -155,6 +157,7 @@ export function AppLayout({
           setCurrentPage={setCurrentPage}
           onSignOut={onSignOut}
           onRefreshProfile={onRefreshProfile}
+          onExportCSV={onExportCSV}
         />
         
         <SidebarInset className="flex-1">

@@ -7,11 +7,8 @@ import {
   ArrowUp as OutgoingIcon,
   Users as UsersIcon,
   User as UserIcon,
-  Settings as SettingsIcon,
-  Mail as MailIcon,
-  Key as KeyIcon,
+  Download as DownloadIcon,
   LogOut as LogOutIcon,
-  RefreshCw as RefreshIcon,
 } from 'lucide-react';
 
 import {
@@ -38,6 +35,7 @@ interface AppSidebarProps {
   setCurrentPage: (page: string) => void;
   onSignOut: () => void;
   onRefreshProfile: () => void;
+  onExportCSV?: () => void;
 }
 
 const navigationItems = [
@@ -52,12 +50,6 @@ const adminItems = [
   { id: 'admin_history', label: 'Change History', icon: UserIcon },
 ];
 
-const accountItems = [
-  { id: 'account_settings', label: 'Account Settings', icon: SettingsIcon },
-  { id: 'change_email', label: 'Change Email', icon: MailIcon },
-  { id: 'change_password', label: 'Change Password', icon: KeyIcon },
-];
-
 export function AppSidebar({
   user,
   role,
@@ -65,6 +57,7 @@ export function AppSidebar({
   setCurrentPage,
   onSignOut,
   onRefreshProfile,
+  onExportCSV,
 }: AppSidebarProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -143,41 +136,25 @@ export function AppSidebar({
           </SidebarGroup>
         )}
 
-        {/* Account Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onRefreshProfile}
-                  tooltip="Refresh Profile"
-                >
-                  <RefreshIcon className="h-4 w-4" />
-                  <span>Refresh Profile</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              {accountItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.id;
-                
-                return (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      onClick={() => handleNavigation(item.id)}
-                      isActive={isActive}
-                      tooltip={item.label}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Actions Section */}
+        {currentPage === 'inventory' && onExportCSV && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Actions</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onExportCSV}
+                    tooltip="Export CSV"
+                  >
+                    <DownloadIcon className="h-4 w-4" />
+                    <span>Export CSV</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

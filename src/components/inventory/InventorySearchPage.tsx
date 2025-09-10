@@ -230,9 +230,10 @@ export function InventorySearchPage() {
             {filteredInventory.length} items {searchTerm && `(filtered from ${inventory.length})`}
           </p>
         </div>
+        {/* Export button only shown on larger screens now */}
         <button
           onClick={exportToCSV}
-          className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg"
+          className="hidden lg:flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg"
         >
           <Download className="h-5 w-5" />
           Export CSV

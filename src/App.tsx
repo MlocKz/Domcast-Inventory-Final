@@ -170,6 +170,60 @@ export default function App() {
         }
     };
 
+    const handleExportCSV = () => {
+        const headers = [
+            'SKU',
+            'Name',
+            'Category',
+            'Quantity on Hand',
+            'Minimum Quantity',
+            'Unit of Measure',
+            'Location',
+            'Unit Cost',
+            'Sell Price',
+            'External ID',
+            'Notes',
+            'Status',
+            'Created At',
+            'Updated At'
+        ];
+
+        const csvContent = [
+            headers.join(','),
+            ...inventory.map(item => {
+                const status = item.qty_on_hand === 0 ? 'Out of Stock' :
+                              item.qty_on_hand <= 10 ? 'Low Stock' : 'In Stock';
+                
+                return [
+                    `"${item.sku}"`,
+                    `"${item.name || ''}"`,
+                    `"${item.category || ''}"`,
+                    item.qty_on_hand,
+                    0, // min_qty placeholder
+                    `"${item.uom || ''}"`,
+                    `"${item.location || ''}"`,
+                    item.unit_cost || '',
+                    item.sell_price || '',
+                    `"${item.external_id || ''}"`,
+                    `"${(item.notes || '').replace(/"/g, '""')}"`,
+                    `"${status}"`,
+                    `"${new Date(item.created_at).toLocaleString()}"`,
+                    `"${new Date(item.updated_at).toLocaleString()}"`
+                ].join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `inventory-export-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleLogShipment = async (shipmentDetails: any) => {
         const { items, shipmentId, type } = shipmentDetails;
         
@@ -310,6 +364,7 @@ export default function App() {
             setCurrentPage={setCurrentPage}
             onSignOut={handleSignOut}
             onRefreshProfile={refreshProfile}
+            onExportCSV={currentPage === 'inventory' ? handleExportCSV : undefined}
             notification={notification}
             setNotification={setNotification}
         >
