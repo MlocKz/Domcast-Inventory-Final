@@ -33,6 +33,16 @@
     --ring: 210 100% 60%;
     --radius: 0.75rem;
     
+    /* Sidebar Variables */
+    --sidebar: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 210 100% 60%;
+    --sidebar-primary-foreground: 240 10% 3.9%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 210 100% 60%;
+    
     /* Status Colors */
     --status-low: 38 92% 50%;
     --status-medium: 210 100% 60%;
@@ -76,6 +86,16 @@
     --input: 214 32% 91%;
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 96%));
     --gradient-accent: linear-gradient(90deg, hsl(210 100% 50% / 0.05), hsl(210 100% 60% / 0.02));
+    
+    /* Light Sidebar Variables */
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 240 10% 3.9%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 240 10% 3.9%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 210 100% 50%;
   }
 }
 
