@@ -138,7 +138,16 @@
       -webkit-overflow-scrolling: touch;
       /* Prevent zoom on input focus */
       touch-action: manipulation;
+      /* iOS safe area support */
+      padding-top: env(safe-area-inset-top);
     }
+  }
+
+  /* iOS-specific improvements */
+  .safe-area-inset {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
   }
   
   h1, h2, h3, h4, h5, h6 {
