@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SearchIcon, PackageIcon, AlertCircle, Download } from 'lucide-react';
+import { SearchIcon, PackageIcon, AlertCircle, Download, Eye, Package, TruckIcon, Calendar, DollarSign, MapPin, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InventoryItem {
@@ -24,6 +24,9 @@ export function InventorySearchPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [viewingItem, setViewingItem] = useState<InventoryItem | null>(null);
+  const [recentShipments, setRecentShipments] = useState<any[]>([]);
+  const [loadingShipments, setLoadingShipments] = useState(false);
   const [editFormData, setEditFormData] = useState({
     qty_on_hand: 0,
     min_qty: 0,
@@ -93,6 +96,34 @@ export function InventorySearchPage() {
       min_qty: 0,
       notes: ''
     });
+  };
+
+  const viewItemDetails = async (item: InventoryItem) => {
+    setViewingItem(item);
+    setLoadingShipments(true);
+    
+    try {
+      // Query shipments where the items array contains the SKU
+      const { data: shipments, error } = await supabase
+        .from('shipments')
+        .select('*')
+        .contains('items', [{ itemNo: item.sku }])
+        .order('timestamp', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setRecentShipments(shipments || []);
+    } catch (err: any) {
+      console.error('Error loading shipments:', err);
+      setRecentShipments([]);
+    } finally {
+      setLoadingShipments(false);
+    }
+  };
+
+  const closeItemDetails = () => {
+    setViewingItem(null);
+    setRecentShipments([]);
   };
 
   const exportToCSV = () => {
@@ -228,8 +259,9 @@ export function InventorySearchPage() {
           {filteredInventory.map((item, index) => (
             <div 
               key={item.sku} 
-              className="flex items-center justify-between px-6 py-5 hover:bg-gradient-accent transition-all duration-300 group"
+              className="flex items-center justify-between px-6 py-5 hover:bg-gradient-accent transition-all duration-300 group cursor-pointer"
               style={{ animationDelay: `${index * 0.05}s` }}
+              onClick={() => viewItemDetails(item)}
             >
               <div className="min-w-0 pr-4 flex-1">
                 <div className="font-mono text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
@@ -290,8 +322,9 @@ export function InventorySearchPage() {
               {filteredInventory.map((item, index) => (
                 <tr 
                   key={item.sku} 
-                  className="border-b border-border hover:bg-gradient-accent transition-all duration-300 group animate-fade-in"
+                  className="border-b border-border hover:bg-gradient-accent transition-all duration-300 group animate-fade-in cursor-pointer"
                   style={{ animationDelay: `${index * 0.05}s` }}
+                  onClick={() => viewItemDetails(item)}
                 >
                   <td className="py-6 px-6">
                     <div className="font-mono text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
@@ -321,12 +354,27 @@ export function InventorySearchPage() {
                     </div>
                   </td>
                   <td className="py-6 px-6 text-center">
-                    <button
-                      onClick={() => startEdit(item)}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          viewItemDetails(item);
+                        }}
+                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors flex items-center gap-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEdit(item);
+                        }}
+                        className="px-3 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -354,6 +402,187 @@ export function InventorySearchPage() {
           )}
         </div>
       </div>
+
+      {/* Product Details Modal */}
+      {viewingItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl border border-border max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <Package className="h-6 w-6 text-primary" />
+                <div>
+                  <h3 className="text-2xl font-bold text-foreground">{viewingItem.sku}</h3>
+                  <p className="text-muted-foreground">{viewingItem.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={closeItemDetails}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {/* Product Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="card p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Stock Level</span>
+                  </div>
+                  <div className={`text-2xl font-bold ${
+                    viewingItem.qty_on_hand === 0 ? 'text-destructive' :
+                    viewingItem.qty_on_hand <= (viewingItem.min_qty || 0) ? 'text-warning' : 'text-status-high'
+                  }`}>
+                    {viewingItem.qty_on_hand.toLocaleString()} {viewingItem.uom}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Min: {viewingItem.min_qty || 0}</p>
+                </div>
+
+                {viewingItem.unit_cost && (
+                  <div className="card p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      <span className="font-semibold">Unit Cost</span>
+                    </div>
+                    <div className="text-2xl font-bold text-foreground">
+                      ${viewingItem.unit_cost.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                {viewingItem.sell_price && (
+                  <div className="card p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      <span className="font-semibold">Sell Price</span>
+                    </div>
+                    <div className="text-2xl font-bold text-status-high">
+                      ${viewingItem.sell_price.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                {viewingItem.location && (
+                  <div className="card p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      <span className="font-semibold">Location</span>
+                    </div>
+                    <div className="text-lg font-medium text-foreground">
+                      {viewingItem.location}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Details */}
+              {(viewingItem.category || viewingItem.external_id || viewingItem.notes) && (
+                <div className="card p-6 mb-8">
+                  <h4 className="text-lg font-semibold mb-4">Additional Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingItem.category && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Category</label>
+                        <p className="text-foreground">{viewingItem.category}</p>
+                      </div>
+                    )}
+                    {viewingItem.external_id && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">External ID</label>
+                        <p className="text-foreground">{viewingItem.external_id}</p>
+                      </div>
+                    )}
+                    {viewingItem.notes && (
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-muted-foreground">Notes</label>
+                        <p className="text-foreground">{viewingItem.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Shipments */}
+              <div className="card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <TruckIcon className="h-5 w-5 text-primary" />
+                  <h4 className="text-lg font-semibold">Recent Shipments</h4>
+                </div>
+
+                {loadingShipments ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : recentShipments.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentShipments.map((shipment) => {
+                      const relevantItem = shipment.items.find((item: any) => item.itemNo === viewingItem.sku);
+                      return (
+                        <div key={shipment.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                shipment.type === 'incoming' 
+                                  ? 'bg-status-high/20 text-status-high' 
+                                  : 'bg-warning/20 text-warning'
+                              }`}>
+                                {shipment.type === 'incoming' ? 'Incoming' : 'Outgoing'}
+                              </span>
+                              <span className="font-mono text-sm font-medium">{shipment.shipment_id}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              {new Date(shipment.timestamp).toLocaleDateString()}
+                            </div>
+                          </div>
+                          {relevantItem && (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Quantity: </span>
+                              <span className="font-semibold text-foreground">{relevantItem.quantity} {viewingItem.uom}</span>
+                              {relevantItem.description && (
+                                <>
+                                  <span className="text-muted-foreground ml-4">Description: </span>
+                                  <span className="text-foreground">{relevantItem.description}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-2">
+                            By {shipment.user_email}
+                            {shipment.approved_by && ` • Approved by ${shipment.approved_by}`}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <TruckIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-40" />
+                    <p className="text-muted-foreground">No recent shipments found for this item</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    closeItemDetails();
+                    startEdit(viewingItem);
+                  }}
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Edit Item
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Inventory Modal */}
       {editingItem && (
