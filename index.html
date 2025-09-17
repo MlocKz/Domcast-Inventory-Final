@@ -10,8 +10,15 @@
     <meta name="description" content="DomCast Inventory Management System"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+    <script>
+      // Load fonts asynchronously to eliminate render-blocking
+      const fontLink = document.createElement('link');
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+      fontLink.rel = 'stylesheet';
+      fontLink.media = 'print';
+      fontLink.onload = function() { this.media = 'all'; };
+      document.head.appendChild(fontLink);
+    </script>
     <title>DomCast Inventory</title>
   </head>
   <body class="dark">
