@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment } from './lib/supabase';
 import {
@@ -24,33 +24,43 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import DccaLogo from './assets/DCCA_Logo.png';
-import Tesseract from 'tesseract.js';
-import * as XLSX from 'xlsx';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { PendingApprovalPage } from './components/auth/PendingApprovalPage';
-import { InventorySearchPage } from './components/inventory/InventorySearchPage';
-import { AdminHistoryPage } from './components/admin/AdminHistoryPage';
-import { UserManagementPage } from './components/admin/UserManagementPage';
-import { AccountSettingsPage } from './components/account/AccountSettingsPage';
-import { ChangeEmailPage } from './components/account/ChangeEmailPage';
-import { ChangePasswordPage } from './components/account/ChangePasswordPage';
-import { PackingSlipScanner } from './components/shipment/PackingSlipScanner';
+import { ErrorBoundary } from './components/layout/ErrorBoundary';
+import { 
+  LazyInventorySearchPage,
+  LazyAdminHistoryPage,
+  LazyUserManagementPage,
+  LazyAccountSettingsPage,
+  LazyChangeEmailPage,
+  LazyChangePasswordPage,
+  LazyPackingSlipScanner,
+} from './components/lazy/LazyComponents';
+import { PageLoadingSpinner } from './components/common/LoadingSpinner';
+import { useOptimizedState, useOptimizedCallback } from './hooks/useOptimizedState';
+import { preloadCriticalLibraries } from './utils/dynamicImports';
+import './utils/performance'; // Initialize performance monitoring
 
 const supabase = _supabase as any;
 
 // Main App Component
 export default function App() {
-    const [user, setUser] = useState<User | null>(null);
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [authError, setAuthError] = useState(false);
+    const [user, setUser] = useOptimizedState<User | null>(null);
+    const [userRole, setUserRole] = useOptimizedState<string | null>(null);
+    const [isLoading, setIsLoading] = useOptimizedState(true);
+    const [authError, setAuthError] = useOptimizedState(false);
     
     // Move state from MainAppView to main App component
-    const [currentPage, setCurrentPage] = useState('inventory');
-    const [inventory, setInventory] = useState<InventoryItem[]>([]);
-    const [shipments, setShipments] = useState<Shipment[]>([]);
-    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+    const [currentPage, setCurrentPage] = useOptimizedState('inventory');
+    const [inventory, setInventory] = useOptimizedState<InventoryItem[]>([]);
+    const [shipments, setShipments] = useOptimizedState<Shipment[]>([]);
+    const [notification, setNotification] = useOptimizedState({ show: false, message: '', type: 'success' });
+
+    // Preload critical libraries
+    useEffect(() => {
+        preloadCriticalLibraries();
+    }, []);
 
     useEffect(() => {
         // Set initial page based on role
@@ -170,7 +180,10 @@ export default function App() {
         }
     };
 
-    const handleExportCSV = () => {
+    const handleExportCSV = useOptimizedCallback(async () => {
+        // Dynamic import for better performance
+        const { loadXLSX } = await import('./utils/dynamicImports');
+        
         const headers = [
             'SKU',
             'Name',
@@ -222,7 +235,8 @@ export default function App() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+        URL.revokeObjectURL(url);
+    }, [inventory]);
 
     const handleLogShipment = async (shipmentDetails: any) => {
         const { items, shipmentId, type } = shipmentDetails;
@@ -357,27 +371,31 @@ export default function App() {
     }
 
     return (
-        <AppLayout
-            user={user}
-            role={userRole}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            onSignOut={handleSignOut}
-            onRefreshProfile={refreshProfile}
-            onExportCSV={currentPage === 'inventory' ? handleExportCSV : undefined}
-            notification={notification}
-            setNotification={setNotification}
-        >
-            {currentPage === 'inventory' && <InventorySearchPage />}
-            {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
-            {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
-            {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
-            {currentPage === 'user_management' && <UserManagementPage />}
-            {currentPage === 'admin_history' && <AdminHistoryPage />}
-            {currentPage === 'account_settings' && <AccountSettingsPage />}
-            {currentPage === 'change_email' && <ChangeEmailPage onBack={() => setCurrentPage('account_settings')} />}
-            {currentPage === 'change_password' && <ChangePasswordPage onBack={() => setCurrentPage('account_settings')} />}
-        </AppLayout>
+        <ErrorBoundary>
+            <AppLayout
+                user={user}
+                role={userRole}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                onSignOut={handleSignOut}
+                onRefreshProfile={refreshProfile}
+                onExportCSV={currentPage === 'inventory' ? handleExportCSV : undefined}
+                notification={notification}
+                setNotification={setNotification}
+            >
+                <Suspense fallback={<PageLoadingSpinner />}>
+                    {currentPage === 'inventory' && <LazyInventorySearchPage />}
+                    {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
+                    {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+                    {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+                    {currentPage === 'user_management' && <LazyUserManagementPage />}
+                    {currentPage === 'admin_history' && <LazyAdminHistoryPage />}
+                    {currentPage === 'account_settings' && <LazyAccountSettingsPage />}
+                    {currentPage === 'change_email' && <LazyChangeEmailPage onBack={() => setCurrentPage('account_settings')} />}
+                    {currentPage === 'change_password' && <LazyChangePasswordPage onBack={() => setCurrentPage('account_settings')} />}
+                </Suspense>
+            </AppLayout>
+        </ErrorBoundary>
     );
 }
 
@@ -887,11 +905,13 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
             {/* Packing Slip Scanner */}
             {showScanner && (
-                <PackingSlipScanner
-                    onItemsExtracted={handlePackingSlipItems}
-                    inventory={inventory}
-                    onClose={() => setShowScanner(false)}
-                />
+                <Suspense fallback={<PageLoadingSpinner />}>
+                    <LazyPackingSlipScanner
+                        onItemsExtracted={handlePackingSlipItems}
+                        inventory={inventory}
+                        onClose={() => setShowScanner(false)}
+                    />
+                </Suspense>
             )}
         </div>
     );

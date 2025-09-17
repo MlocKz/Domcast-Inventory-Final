@@ -8,8 +8,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="description" content="DomCast Inventory Management System"/>
+    
+    <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="preload" href="/src/assets/DCCA_Logo.png" as="image" type="image/png">
+    
+    <!-- Reduce layout shift -->
+    <style>
+      body { font-family: Inter, system-ui, -apple-system, sans-serif; }
+      .loading-fallback { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    </style>
     <script>
       // Load fonts asynchronously to eliminate render-blocking
       const fontLink = document.createElement('link');
@@ -22,7 +32,12 @@
     <title>DomCast Inventory</title>
   </head>
   <body class="dark">
-    <div id="root"></div>
+    <div id="root">
+      <div class="loading-fallback">
+        <div class="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+        <p class="mt-4 text-muted-foreground">Loading DomCast...</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

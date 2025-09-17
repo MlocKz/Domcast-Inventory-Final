@@ -10,7 +10,27 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   build: {
-    target: 'esnext',
+    target: 'es2022',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+          charts: ['recharts'],
+          supabase: ['@supabase/supabase-js'],
+          utils: ['date-fns', 'clsx', 'tailwind-merge']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production',
+      },
+    },
   },
   plugins: [
     react(),
@@ -23,5 +43,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['react', 'react-dom', '@supabase/supabase-js']
   },
 }))
