@@ -14,6 +14,7 @@ interface InventoryItem {
   external_id: string | null;
   notes: string | null;
   min_qty: number;
+  classification: 'stocking' | 'non-stocking';
   created_at: string;
   updated_at: string;
 }
@@ -27,10 +28,25 @@ export function InventorySearchPage() {
   const [viewingItem, setViewingItem] = useState<InventoryItem | null>(null);
   const [recentShipments, setRecentShipments] = useState<any[]>([]);
   const [loadingShipments, setLoadingShipments] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editFormData, setEditFormData] = useState({
     qty_on_hand: 0,
     min_qty: 0,
     notes: ''
+  });
+  const [newItemFormData, setNewItemFormData] = useState({
+    sku: '',
+    name: '',
+    category: '',
+    qty_on_hand: 0,
+    min_qty: 0,
+    uom: 'ea',
+    location: '',
+    unit_cost: '',
+    sell_price: '',
+    external_id: '',
+    notes: '',
+    classification: 'stocking' as 'stocking' | 'non-stocking'
   });
 
   useEffect(() => {
@@ -48,7 +64,7 @@ export function InventorySearchPage() {
         .order('sku');
 
       if (error) throw error;
-      setInventory(data || []);
+      setInventory((data as InventoryItem[]) || []);
     } catch (err: any) {
       console.error('Error loading inventory:', err);
       setError(err.message || 'Failed to load inventory');
@@ -124,6 +140,73 @@ export function InventorySearchPage() {
   const closeItemDetails = () => {
     setViewingItem(null);
     setRecentShipments([]);
+  };
+
+  const handleAddNewItem = async () => {
+    try {
+      setError(null);
+      
+      const { error } = await supabase
+        .from('inventory')
+        .insert({
+          sku: newItemFormData.sku,
+          name: newItemFormData.name,
+          category: newItemFormData.category || null,
+          qty_on_hand: newItemFormData.qty_on_hand,
+          min_qty: newItemFormData.min_qty,
+          uom: newItemFormData.uom,
+          location: newItemFormData.location || null,
+          unit_cost: newItemFormData.unit_cost ? parseFloat(newItemFormData.unit_cost) : null,
+          sell_price: newItemFormData.sell_price ? parseFloat(newItemFormData.sell_price) : null,
+          external_id: newItemFormData.external_id || null,
+          notes: newItemFormData.notes || null,
+          classification: newItemFormData.classification
+        });
+
+      if (error) throw error;
+      
+      setShowAddModal(false);
+      setNewItemFormData({
+        sku: '',
+        name: '',
+        category: '',
+        qty_on_hand: 0,
+        min_qty: 0,
+        uom: 'ea',
+        location: '',
+        unit_cost: '',
+        sell_price: '',
+        external_id: '',
+        notes: '',
+        classification: 'stocking'
+      });
+      loadInventory();
+    } catch (err: any) {
+      console.error('Error adding new item:', err);
+      setError(err.message || 'Failed to add new item');
+    }
+  };
+
+  const getStockColor = (item: InventoryItem) => {
+    // Non-stocking items out of stock should be grey
+    if (item.classification === 'non-stocking' && item.qty_on_hand === 0) {
+      return 'text-muted-foreground';
+    }
+    // Regular stocking items follow normal color rules
+    if (item.qty_on_hand === 0) return 'text-destructive';
+    if (item.qty_on_hand <= (item.min_qty || 0)) return 'text-warning';
+    return 'text-status-high';
+  };
+
+  const getStockBadgeColor = (item: InventoryItem) => {
+    // Non-stocking items out of stock should be grey
+    if (item.classification === 'non-stocking' && item.qty_on_hand === 0) {
+      return 'bg-muted text-muted-foreground';
+    }
+    // Regular stocking items follow normal color rules
+    if (item.qty_on_hand === 0) return 'bg-destructive/20 text-destructive';
+    if (item.qty_on_hand <= (item.min_qty || 0)) return 'bg-warning/20 text-warning';
+    return 'bg-status-high/20 text-status-high';
   };
 
   const exportToCSV = () => {
@@ -230,14 +313,22 @@ export function InventorySearchPage() {
             {filteredInventory.length} items {searchTerm && `(filtered from ${inventory.length})`}
           </p>
         </div>
-        {/* Export button only shown on larger screens now */}
-        <button
-          onClick={exportToCSV}
-          className="hidden lg:flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg"
-        >
-          <Download className="h-5 w-5" />
-          Export CSV
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-secondary/90 transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            <Package className="h-5 w-5" />
+            <span className="hidden sm:inline">Add Item</span>
+          </button>
+          <button
+            onClick={exportToCSV}
+            className="hidden lg:flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            <Download className="h-5 w-5" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Search Box */}
@@ -273,14 +364,12 @@ export function InventorySearchPage() {
                 </div>
               </div>
               <div className="flex flex-col items-end">
-                <div className={`text-2xl font-extrabold transition-all duration-300 ${
-                  item.qty_on_hand === 0 ? 'text-destructive' :
-                  item.qty_on_hand <= (item.min_qty || 0) ? 'text-warning' : 'text-status-high'
-                }`}>
+                <div className={`text-2xl font-extrabold transition-all duration-300 ${getStockColor(item)}`}>
                   {item.qty_on_hand.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-medium">
-                  {item.qty_on_hand === 0 ? 'Out of Stock' :
+                  {item.classification === 'non-stocking' && item.qty_on_hand === 0 ? 'Non-Stocking' :
+                   item.qty_on_hand === 0 ? 'Out of Stock' :
                    item.qty_on_hand <= (item.min_qty || 0) ? 'Low Stock' : 'In Stock'}
                 </div>
               </div>
@@ -339,17 +428,12 @@ export function InventorySearchPage() {
                   </td>
                   <td className="py-6 px-6 text-center">
                     <div className="flex flex-col items-center space-y-2">
-                      <div className={`text-2xl font-bold transition-all duration-300 ${
-                        item.qty_on_hand === 0 ? 'text-destructive' :
-                        item.qty_on_hand <= (item.min_qty || 0) ? 'text-warning' : 'text-status-high'
-                      }`}>
+                      <div className={`text-2xl font-bold transition-all duration-300 ${getStockColor(item)}`}>
                         {item.qty_on_hand.toLocaleString()}
                       </div>
-                      <div className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        item.qty_on_hand === 0 ? 'bg-destructive/20 text-destructive' :
-                        item.qty_on_hand <= (item.min_qty || 0) ? 'bg-warning/20 text-warning' : 'bg-status-high/20 text-status-high'
-                      }`}>
-                        {item.qty_on_hand === 0 ? 'Out of Stock' :
+                      <div className={`text-xs font-semibold px-3 py-1 rounded-full ${getStockBadgeColor(item)}`}>
+                        {item.classification === 'non-stocking' && item.qty_on_hand === 0 ? 'Non-Stocking' :
+                         item.qty_on_hand === 0 ? 'Out of Stock' :
                          item.qty_on_hand <= (item.min_qty || 0) ? 'Low Stock' : 'In Stock'}
                       </div>
                     </div>
@@ -429,19 +513,18 @@ export function InventorySearchPage() {
             <div className="p-6">
               {/* Product Overview */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="card p-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">Stock Level</span>
+                  <div className="card p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Package className="h-5 w-5 text-primary" />
+                      <span className="font-semibold">Stock Level</span>
+                    </div>
+                    <div className={`text-2xl font-bold ${getStockColor(viewingItem)}`}>
+                      {viewingItem.qty_on_hand.toLocaleString()} {viewingItem.uom}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Min: {viewingItem.min_qty || 0} • {viewingItem.classification === 'non-stocking' ? 'Non-Stocking' : 'Stocking'}
+                    </p>
                   </div>
-                  <div className={`text-2xl font-bold ${
-                    viewingItem.qty_on_hand === 0 ? 'text-destructive' :
-                    viewingItem.qty_on_hand <= (viewingItem.min_qty || 0) ? 'text-warning' : 'text-status-high'
-                  }`}>
-                    {viewingItem.qty_on_hand.toLocaleString()} {viewingItem.uom}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Min: {viewingItem.min_qty || 0}</p>
-                </div>
 
                 {viewingItem.unit_cost && (
                   <div className="card p-4">
@@ -646,6 +729,204 @@ export function InventorySearchPage() {
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Item Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card p-6 rounded-xl border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-semibold text-foreground mb-6">
+              Add New Inventory Item
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  SKU <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newItemFormData.sku}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, sku: e.target.value })}
+                  className="input w-full"
+                  placeholder="Enter SKU"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Name <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newItemFormData.name}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, name: e.target.value })}
+                  className="input w-full"
+                  placeholder="Item name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Classification <span className="text-destructive">*</span>
+                </label>
+                <select
+                  value={newItemFormData.classification}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, classification: e.target.value as 'stocking' | 'non-stocking' })}
+                  className="input w-full"
+                >
+                  <option value="stocking">Stocking</option>
+                  <option value="non-stocking">Non-Stocking</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  value={newItemFormData.category}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, category: e.target.value })}
+                  className="input w-full"
+                  placeholder="Category"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Quantity on Hand
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newItemFormData.qty_on_hand}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, qty_on_hand: parseInt(e.target.value) || 0 })}
+                  className="input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Minimum Quantity
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newItemFormData.min_qty}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, min_qty: parseInt(e.target.value) || 0 })}
+                  className="input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Unit of Measure
+                </label>
+                <input
+                  type="text"
+                  value={newItemFormData.uom}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, uom: e.target.value })}
+                  className="input w-full"
+                  placeholder="ea, box, case, etc."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={newItemFormData.location}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, location: e.target.value })}
+                  className="input w-full"
+                  placeholder="Storage location"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Unit Cost
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newItemFormData.unit_cost}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, unit_cost: e.target.value })}
+                  className="input w-full"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Sell Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newItemFormData.sell_price}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, sell_price: e.target.value })}
+                  className="input w-full"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  External ID
+                </label>
+                <input
+                  type="text"
+                  value={newItemFormData.external_id}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, external_id: e.target.value })}
+                  className="input w-full"
+                  placeholder="External system ID"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={newItemFormData.notes}
+                  onChange={(e) => setNewItemFormData({ ...newItemFormData, notes: e.target.value })}
+                  className="input w-full h-20 resize-none"
+                  placeholder="Additional notes..."
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-lg">
+                <p className="text-destructive text-sm">{error}</p>
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setError(null);
+                }}
+                className="px-6 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddNewItem}
+                disabled={!newItemFormData.sku || !newItemFormData.name}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Item
               </button>
             </div>
           </div>

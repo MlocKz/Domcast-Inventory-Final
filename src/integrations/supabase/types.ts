@@ -17,6 +17,7 @@ export type Database = {
       inventory: {
         Row: {
           category: string | null
+          classification: string
           created_at: string
           external_id: string | null
           location: string | null
@@ -32,6 +33,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          classification?: string
           created_at?: string
           external_id?: string | null
           location?: string | null
@@ -47,6 +49,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          classification?: string
           created_at?: string
           external_id?: string | null
           location?: string | null
