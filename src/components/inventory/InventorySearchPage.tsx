@@ -32,7 +32,8 @@ export function InventorySearchPage() {
   const [editFormData, setEditFormData] = useState({
     qty_on_hand: 0,
     min_qty: 0,
-    notes: ''
+    notes: '',
+    classification: 'stocking' as 'stocking' | 'non-stocking'
   });
   const [newItemFormData, setNewItemFormData] = useState({
     sku: '',
@@ -78,7 +79,8 @@ export function InventorySearchPage() {
     setEditFormData({
       qty_on_hand: item.qty_on_hand,
       min_qty: item.min_qty || 0,
-      notes: item.notes || ''
+      notes: item.notes || '',
+      classification: item.classification
     });
   };
 
@@ -91,7 +93,8 @@ export function InventorySearchPage() {
         .update({
           qty_on_hand: editFormData.qty_on_hand,
           min_qty: editFormData.min_qty,
-          notes: editFormData.notes || null
+          notes: editFormData.notes || null,
+          classification: editFormData.classification
         })
         .eq('sku', editingItem.sku);
 
@@ -110,7 +113,8 @@ export function InventorySearchPage() {
     setEditFormData({
       qty_on_hand: 0,
       min_qty: 0,
-      notes: ''
+      notes: '',
+      classification: 'stocking'
     });
   };
 
@@ -368,8 +372,7 @@ export function InventorySearchPage() {
                   {item.qty_on_hand.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-medium">
-                  {item.classification === 'non-stocking' && item.qty_on_hand === 0 ? 'Non-Stocking' :
-                   item.qty_on_hand === 0 ? 'Out of Stock' :
+                  {item.qty_on_hand === 0 ? 'Out of Stock' :
                    item.qty_on_hand <= (item.min_qty || 0) ? 'Low Stock' : 'In Stock'}
                 </div>
               </div>
@@ -432,8 +435,7 @@ export function InventorySearchPage() {
                         {item.qty_on_hand.toLocaleString()}
                       </div>
                       <div className={`text-xs font-semibold px-3 py-1 rounded-full ${getStockBadgeColor(item)}`}>
-                        {item.classification === 'non-stocking' && item.qty_on_hand === 0 ? 'Non-Stocking' :
-                         item.qty_on_hand === 0 ? 'Out of Stock' :
+                        {item.qty_on_hand === 0 ? 'Out of Stock' :
                          item.qty_on_hand <= (item.min_qty || 0) ? 'Low Stock' : 'In Stock'}
                       </div>
                     </div>
@@ -704,6 +706,20 @@ export function InventorySearchPage() {
                 />
               </div>
               
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Classification
+                </label>
+                <select
+                  value={editFormData.classification}
+                  onChange={(e) => setEditFormData({ ...editFormData, classification: e.target.value as 'stocking' | 'non-stocking' })}
+                  className="input w-full"
+                >
+                  <option value="stocking">Stocking</option>
+                  <option value="non-stocking">Non-Stocking</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Notes
