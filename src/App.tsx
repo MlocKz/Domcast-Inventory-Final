@@ -107,33 +107,43 @@ export default function App() {
 
     const fetchUserProfile = async (userId: string) => {
         try {
-            const { data, error } = await supabase
+            // Fetch profile and role separately
+            const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .maybeSingle();
 
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                // Don't set auth error - just use default role
-                setUser({ id: userId, email: '', role: 'submitter' } as any);
+            if (profileError) {
+                console.error('Error fetching user profile:', profileError);
+                setUser({ id: userId, email: '', status: 'pending' } as any);
                 setUserRole('submitter');
+                setIsLoading(false);
                 return;
             }
 
-            if (data) {
-                setUser(data as any);
-                setUserRole((data as any).role ?? 'submitter');
+            // Fetch user role from user_roles table
+            const { data: roleData, error: roleError } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            if (roleError) {
+                console.error('Error fetching user role:', roleError);
+            }
+
+            if (profileData) {
+                setUser(profileData as any);
+                setUserRole(roleData?.role ?? 'submitter');
             } else {
-                // Profile doesn't exist yet - create a default one
-                console.log('Profile not found, using default submitter role');
-                setUser({ id: userId, email: '', role: 'submitter', status: 'pending' } as any);
+                console.log('Profile not found, using default');
+                setUser({ id: userId, email: '', status: 'pending' } as any);
                 setUserRole('submitter');
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
-            // Fallback to default role rather than blocking login
-            setUser({ id: userId, email: '', role: 'submitter' } as any);
+            setUser({ id: userId, email: '', status: 'pending' } as any);
             setUserRole('submitter');
         } finally {
             setIsLoading(false);
@@ -234,8 +244,7 @@ export default function App() {
                     shipment_id: shipmentId,
                     type,
                     items,
-                    user_id: user!.id,
-                    user_email: user!.email
+                    user_id: user!.id
                 });
 
             if (error) throw error;

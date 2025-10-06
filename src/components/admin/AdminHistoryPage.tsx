@@ -43,17 +43,29 @@ export function AdminHistoryPage() {
 
       if (inventoryError) throw inventoryError;
 
+      // Fetch user profiles to map user IDs to display names/emails
+      const userIds = [...new Set(shipments?.map(s => s.user_id).filter(Boolean) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .in('id', userIds);
+
+      const userMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
       // Format history entries
       const formattedHistory: HistoryEntry[] = [
-        ...(shipments?.map(shipment => ({
-          id: shipment.id,
-          table_name: 'shipments',
-          operation: 'INSERT',
-          user_email: shipment.user_email || 'Unknown',
-          timestamp: shipment.timestamp,
-          old_data: null,
-          new_data: shipment
-        })) || []),
+        ...(shipments?.map(shipment => {
+          const userProfile = userMap.get(shipment.user_id);
+          return {
+            id: shipment.id,
+            table_name: 'shipments',
+            operation: 'INSERT',
+            user_email: userProfile?.display_name || userProfile?.email || 'Unknown',
+            timestamp: shipment.timestamp,
+            old_data: null,
+            new_data: shipment
+          };
+        }) || []),
         ...(inventory?.map(item => ({
           id: item.sku,
           table_name: 'inventory',

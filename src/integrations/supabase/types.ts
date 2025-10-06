@@ -68,25 +68,25 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          display_name: string | null
           email: string
           id: string
-          role: string
           status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           email: string
           id: string
-          role?: string
           status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           email?: string
           id?: string
-          role?: string
           status?: string
           updated_at?: string
         }
@@ -97,7 +97,6 @@ export type Database = {
           id: string
           items: Json
           requested_at: string
-          requestor_email: string | null
           requestor_id: string
           shipment_id: string
           status: string
@@ -107,7 +106,6 @@ export type Database = {
           id?: string
           items: Json
           requested_at?: string
-          requestor_email?: string | null
           requestor_id: string
           shipment_id: string
           status?: string
@@ -117,7 +115,6 @@ export type Database = {
           id?: string
           items?: Json
           requested_at?: string
-          requestor_email?: string | null
           requestor_id?: string
           shipment_id?: string
           status?: string
@@ -127,33 +124,48 @@ export type Database = {
       }
       shipments: {
         Row: {
-          approved_by: string | null
           id: string
           items: Json
           shipment_id: string
           timestamp: string
           type: string
-          user_email: string | null
           user_id: string
         }
         Insert: {
-          approved_by?: string | null
           id?: string
           items: Json
           shipment_id: string
           timestamp?: string
           type: string
-          user_email?: string | null
           user_id: string
         }
         Update: {
-          approved_by?: string | null
           id?: string
           items?: Json
           shipment_id?: string
           timestamp?: string
           type?: string
-          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -167,9 +179,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "editor" | "submitter"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -296,6 +315,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "editor", "submitter"],
+    },
   },
 } as const

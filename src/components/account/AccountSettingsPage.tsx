@@ -6,13 +6,17 @@ import { Notification } from '../ui/Notification';
 interface UserProfile {
   id: string;
   email: string;
-  role: string;
   status: string;
   created_at: string;
+  display_name: string | null;
+}
+
+interface UserWithRole extends UserProfile {
+  role: string;
 }
 
 export function AccountSettingsPage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserWithRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
@@ -25,14 +29,27 @@ export function AccountSettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (profileError) throw profileError;
+
+      // Fetch user role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (roleError) throw roleError;
+
+      setProfile({
+        ...profileData,
+        role: roleData?.role || 'submitter'
+      });
     } catch (error) {
       console.error('Error fetching profile:', error);
       setNotification({
