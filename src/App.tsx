@@ -312,7 +312,24 @@ export default function App() {
     };
 
     const incomingShipments = shipments.filter(s => s.type === 'incoming');
-    const outgoingShipments = shipments.filter(s => s.type === 'outgoing');
+    const outgoingShipments = shipments
+        .filter(s => s.type === 'outgoing')
+        .sort((a, b) => {
+            const aIsNumeric = /^\d+$/.test(a.shipment_id);
+            const bIsNumeric = /^\d+$/.test(b.shipment_id);
+            
+            // If both are numeric, sort by number (descending)
+            if (aIsNumeric && bIsNumeric) {
+                return parseInt(b.shipment_id) - parseInt(a.shipment_id);
+            }
+            
+            // If only one is numeric, numeric comes first
+            if (aIsNumeric) return -1;
+            if (bIsNumeric) return 1;
+            
+            // If both are letters, sort alphabetically
+            return a.shipment_id.localeCompare(b.shipment_id);
+        });
 
     const handleSignOut = async () => {
         try {
