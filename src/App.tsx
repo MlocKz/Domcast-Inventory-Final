@@ -166,7 +166,8 @@ export default function App() {
             const { data: shipmentsData, error: shipmentsError } = await supabase
                 .from('shipments')
                 .select('*')
-                .order('shipment_id', { ascending: false });
+                .order('shipment_id', { ascending: false })
+                .order('id', { ascending: false });
 
             if (shipmentsError) throw shipmentsError;
             setShipments(shipmentsData || []);
