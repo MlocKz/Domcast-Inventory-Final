@@ -22,6 +22,8 @@ export function UserManagementPage() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -109,6 +111,44 @@ export function UserManagementPage() {
     }
   };
 
+  const updateUserName = async (userId: string, displayName: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ display_name: displayName })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setNotification({
+        show: true,
+        message: 'Name updated successfully',
+        type: 'success'
+      });
+      
+      setEditingUserId(null);
+      setEditingName('');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating name:', error);
+      setNotification({
+        show: true,
+        message: 'Failed to update name',
+        type: 'error'
+      });
+    }
+  };
+
+  const startEditing = (userId: string, currentName: string | null) => {
+    setEditingUserId(userId);
+    setEditingName(currentName || '');
+  };
+
+  const cancelEditing = () => {
+    setEditingUserId(null);
+    setEditingName('');
+  };
+
   const getStatusBadge = (status: string) => {
     const baseClasses = "px-2 py-1 text-xs font-medium rounded-full";
     switch (status) {
@@ -170,7 +210,39 @@ export function UserManagementPage() {
                 {users.map((user) => (
                   <tr key={user.id} className="border-b last:border-b-0">
                     <td className="py-3 px-4 text-foreground">
-                      {user.display_name || 'Not set'}
+                      {editingUserId === user.id ? (
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="px-2 py-1 text-sm border border-border rounded bg-background text-foreground"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => updateUserName(user.id, editingName)}
+                            className="px-2 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="px-2 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-center">
+                          <span>{user.display_name || 'Not set'}</span>
+                          <button
+                            onClick={() => startEditing(user.id, user.display_name)}
+                            className="text-blue-500 hover:text-blue-600 text-sm"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-foreground">{user.email}</td>
                     <td className="py-3 px-4">
