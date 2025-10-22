@@ -162,24 +162,15 @@ export default function App() {
             if (inventoryError) throw inventoryError;
             setInventory(inventoryData || []);
 
-            // Load shipments with user information
+            // Load shipments
             const { data: shipmentsData, error: shipmentsError } = await supabase
                 .from('shipments')
-                .select(`
-                    *,
-                    profiles!shipments_user_id_fkey(email, display_name)
-                `)
+                .select('*')
                 .order('shipment_id', { ascending: false })
                 .order('id', { ascending: false });
 
             if (shipmentsError) throw shipmentsError;
-            
-            const shipmentsWithUser = (shipmentsData || []).map(shipment => ({
-                ...shipment,
-                user_email: shipment.profiles?.display_name || shipment.profiles?.email || 'Unknown User'
-            }));
-            
-            setShipments(shipmentsWithUser);
+            setShipments(shipmentsData || []);
         } catch (error) {
             console.error('Error loading data:', error);
             setNotification({ show: true, message: 'Error loading data', type: 'error' });
