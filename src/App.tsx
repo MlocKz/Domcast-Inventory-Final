@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment } from './lib/supabase';
+
+// Verify Supabase client is initialized
+if (!supabase) {
+  console.error('Supabase client is not initialized!');
+}
 import {
   PackageCheck as ShipmentIcon,
   ArrowDown as IncomingIcon,
@@ -38,66 +43,76 @@ export default function App() {
     useEffect(() => {
         let loadingTimeout: NodeJS.Timeout | null = null;
         let isMounted = true;
+        let subscription: any = null;
 
-        // Aggressive timeout - force load after 1.5 seconds to prevent stuck loading
+        // Very aggressive timeout - force load after 1 second to prevent stuck loading
         loadingTimeout = setTimeout(() => {
             if (isMounted) {
                 console.warn('Loading timeout reached, forcing app to load');
                 setIsLoading(false);
-                // If no user after timeout, show login screen
-                if (!user) {
-                    setUser(null);
-                }
             }
-        }, 1500); // 1.5 second timeout - very aggressive for production
+        }, 1000); // 1 second timeout - very aggressive for production
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (!isMounted) return;
-            
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                // Fetch profile immediately
-                fetchUserProfile(session.user.id);
-            } else {
-                setUserRole(null);
-                if (loadingTimeout) clearTimeout(loadingTimeout);
-                setIsLoading(false);
-            }
-        });
-
-        // Check for existing session with error handling
-        supabase.auth.getSession()
-            .then(({ data: { session }, error }) => {
+        try {
+            // Listen for auth changes
+            const authResult = supabase.auth.onAuthStateChange((event, session) => {
                 if (!isMounted) return;
-                
-                if (loadingTimeout) clearTimeout(loadingTimeout);
-                
-                if (error) {
-                    console.error('Error getting session:', error);
-                    setIsLoading(false);
-                    return;
-                }
                 
                 setUser(session?.user ?? null);
                 if (session?.user) {
+                    // Fetch profile immediately
                     fetchUserProfile(session.user.id);
                 } else {
+                    setUserRole(null);
+                    if (loadingTimeout) clearTimeout(loadingTimeout);
                     setIsLoading(false);
                 }
-            })
-            .catch((error) => {
-                if (!isMounted) return;
-                
-                if (loadingTimeout) clearTimeout(loadingTimeout);
-                console.error('Failed to get session:', error);
-                setIsLoading(false);
             });
+            subscription = authResult.data.subscription;
+
+            // Check for existing session with error handling
+            supabase.auth.getSession()
+                .then(({ data: { session }, error }) => {
+                    if (!isMounted) return;
+                    
+                    if (loadingTimeout) clearTimeout(loadingTimeout);
+                    
+                    if (error) {
+                        console.error('Error getting session:', error);
+                        setIsLoading(false);
+                        return;
+                    }
+                    
+                    setUser(session?.user ?? null);
+                    if (session?.user) {
+                        fetchUserProfile(session.user.id);
+                    } else {
+                        setIsLoading(false);
+                    }
+                })
+                .catch((error) => {
+                    if (!isMounted) return;
+                    
+                    if (loadingTimeout) clearTimeout(loadingTimeout);
+                    console.error('Failed to get session:', error);
+                    setIsLoading(false);
+                });
+        } catch (error) {
+            console.error('Error setting up auth:', error);
+            if (loadingTimeout) clearTimeout(loadingTimeout);
+            setIsLoading(false);
+        }
 
         return () => {
             isMounted = false;
             if (loadingTimeout) clearTimeout(loadingTimeout);
-            subscription.unsubscribe();
+            if (subscription) {
+                try {
+                    subscription.unsubscribe();
+                } catch (e) {
+                    console.error('Error unsubscribing:', e);
+                }
+            }
         };
     }, []);
 
