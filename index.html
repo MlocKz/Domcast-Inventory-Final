@@ -29,14 +29,30 @@
       window.addEventListener('DOMContentLoaded', () => {
         const root = document.getElementById('root');
         if (root) {
+          // Check for script loading errors
+          const scripts = document.querySelectorAll('script[type="module"]');
+          let scriptErrors = [];
+          
+          scripts.forEach(script => {
+            script.addEventListener('error', (e) => {
+              scriptErrors.push(script.src || 'unknown script');
+              console.error('Script failed to load:', script.src);
+            });
+          });
+          
           // Add a timeout to show error if React doesn't mount
           setTimeout(() => {
             if (root.innerHTML.includes('Loading DomCast')) {
               console.error('React failed to mount - JavaScript files may not be loading');
+              const errorDetails = scriptErrors.length > 0 
+                ? `<p style="color: #f00; font-size: 12px; margin-bottom: 16px;">Failed scripts: ${scriptErrors.join(', ')}</p>`
+                : '<p style="color: #999; font-size: 12px; margin-bottom: 16px;">Check Network tab (F12) for failed requests.</p>';
+              
               root.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; background: #000; color: #fff;">
                   <h1 style="font-size: 24px; margin-bottom: 16px;">⚠️ Application Failed to Load</h1>
                   <p style="color: #ccc; margin-bottom: 16px;">React did not mount. This usually means JavaScript files are not loading.</p>
+                  ${errorDetails}
                   <p style="color: #999; font-size: 12px; margin-bottom: 16px;">Check browser console (F12) and Netlify build logs for errors.</p>
                   <p style="color: #999; font-size: 12px; margin-bottom: 16px;">If you see this message, JavaScript is working but React isn't loading.</p>
                   <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer;">

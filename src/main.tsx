@@ -6,12 +6,46 @@ import './index.css'
 // Error boundary for production - log errors but don't break the app
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
-  // Don't replace the root - let React handle it
+  console.error('Error source:', event.filename, 'Line:', event.lineno);
+  // Show error if it's a module loading error
+  if (event.filename && event.filename.includes('.js')) {
+    const root = document.getElementById('root');
+    if (root && root.innerHTML.includes('Loading DomCast')) {
+      root.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; background: #000; color: #fff;">
+          <h1 style="font-size: 24px; margin-bottom: 16px;">⚠️ JavaScript Error</h1>
+          <p style="color: #ccc; margin-bottom: 16px;">Failed to load: ${event.filename}</p>
+          <p style="color: #f00; font-size: 12px; margin-bottom: 16px;">${event.message || 'Unknown error'}</p>
+          <p style="color: #999; font-size: 12px; margin-bottom: 16px;">Check browser console (F12) for details.</p>
+          <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Reload Page
+          </button>
+        </div>
+      `;
+    }
+  }
 });
 
 // Log unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
+  // Show error if it's a module loading error
+  if (event.reason && event.reason.message && event.reason.message.includes('Failed to fetch')) {
+    const root = document.getElementById('root');
+    if (root && root.innerHTML.includes('Loading DomCast')) {
+      root.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; background: #000; color: #fff;">
+          <h1 style="font-size: 24px; margin-bottom: 16px;">⚠️ Module Loading Error</h1>
+          <p style="color: #ccc; margin-bottom: 16px;">Failed to fetch JavaScript module.</p>
+          <p style="color: #f00; font-size: 12px; margin-bottom: 16px;">${event.reason.message}</p>
+          <p style="color: #999; font-size: 12px; margin-bottom: 16px;">Check Network tab (F12) for failed requests.</p>
+          <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Reload Page
+          </button>
+        </div>
+      `;
+    }
+  }
 });
 
 console.log('main.tsx executing - React is loading');
