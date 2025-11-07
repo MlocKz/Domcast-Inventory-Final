@@ -464,6 +464,18 @@
     color: hsl(var(--foreground));
   }
   
+  /* Optimize table rows for smooth scrolling */
+  tbody tr {
+    will-change: background-color;
+    contain: layout style paint;
+  }
+  
+  /* Optimize list items for smooth scrolling */
+  .md\\:hidden > div {
+    will-change: background-color;
+    contain: layout style paint;
+  }
+  
   /* Mobile-specific improvements */
   @media (max-width: 768px) {
     /* Improve mobile navigation */

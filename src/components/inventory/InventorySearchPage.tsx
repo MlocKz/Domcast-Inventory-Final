@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SearchIcon, PackageIcon, AlertCircle, Download, Eye, Package, TruckIcon, Calendar, DollarSign, MapPin, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,6 +29,8 @@ export function InventorySearchPage() {
   const [recentShipments, setRecentShipments] = useState<any[]>([]);
   const [loadingShipments, setLoadingShipments] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50; // Pagination to improve scroll performance
   const [editFormData, setEditFormData] = useState({
     qty_on_hand: 0,
     min_qty: 0,
@@ -74,7 +76,7 @@ export function InventorySearchPage() {
     }
   };
 
-  const startEdit = (item: InventoryItem) => {
+  const startEdit = useCallback((item: InventoryItem) => {
     setEditingItem(item);
     setEditFormData({
       qty_on_hand: item.qty_on_hand,
@@ -82,7 +84,7 @@ export function InventorySearchPage() {
       notes: item.notes || '',
       classification: item.classification
     });
-  };
+  }, []);
 
   const handleSaveEdit = async () => {
     if (!editingItem) return;
@@ -118,7 +120,7 @@ export function InventorySearchPage() {
     });
   };
 
-  const viewItemDetails = async (item: InventoryItem) => {
+  const viewItemDetails = useCallback(async (item: InventoryItem) => {
     setViewingItem(item);
     setLoadingShipments(true);
     
@@ -148,7 +150,7 @@ export function InventorySearchPage() {
     } finally {
       setLoadingShipments(false);
     }
-  };
+  }, []);
 
   const closeItemDetails = () => {
     setViewingItem(null);
@@ -286,6 +288,19 @@ export function InventorySearchPage() {
     );
   }, [inventory, searchTerm]);
 
+  // Paginate filtered results for better scroll performance
+  const paginatedInventory = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredInventory.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredInventory, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -324,6 +339,7 @@ export function InventorySearchPage() {
           </h1>
           <p className="text-muted-foreground text-lg">
             {filteredInventory.length} items {searchTerm && `(filtered from ${inventory.length})`}
+            {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
           </p>
         </div>
         <div className="flex gap-3">
@@ -361,11 +377,10 @@ export function InventorySearchPage() {
       <div className="card shadow-elegant animate-fade-in" style={{ animationDelay: '0.2s' }}>
         {/* Mobile list (default) */}
         <div className="md:hidden divide-y divide-border">
-          {filteredInventory.map((item, index) => (
+          {paginatedInventory.map((item) => (
             <div 
               key={item.sku} 
               className="flex items-center justify-between px-6 py-5 hover:bg-gradient-accent transition-all duration-300 group cursor-pointer"
-              style={{ animationDelay: `${index * 0.05}s` }}
               onClick={() => viewItemDetails(item)}
             >
               <div className="min-w-0 pr-4 flex-1">
@@ -388,7 +403,7 @@ export function InventorySearchPage() {
             </div>
           ))}
 
-          {filteredInventory.length === 0 && (
+          {paginatedInventory.length === 0 && (
             <div className="text-center py-16 animate-fade-in">
               <PackageIcon className="h-16 w-16 mx-auto mb-6 text-muted-foreground opacity-40" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -409,6 +424,29 @@ export function InventorySearchPage() {
           )}
         </div>
 
+        {/* Pagination for mobile */}
+        {totalPages > 1 && (
+          <div className="md:hidden flex items-center justify-center gap-2 mt-6 pb-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 text-foreground font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
         {/* Desktop table */}
         <div className="hidden md:block">
           <table className="w-full">
@@ -421,11 +459,10 @@ export function InventorySearchPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredInventory.map((item, index) => (
+              {paginatedInventory.map((item) => (
                 <tr 
                   key={item.sku} 
-                  className="border-b border-border hover:bg-gradient-accent transition-all duration-300 group animate-fade-in cursor-pointer"
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  className="border-b border-border hover:bg-gradient-accent transition-all duration-300 group cursor-pointer"
                   onClick={() => viewItemDetails(item)}
                 >
                   <td className="py-6 px-6">
@@ -477,7 +514,7 @@ export function InventorySearchPage() {
             </tbody>
           </table>
 
-          {filteredInventory.length === 0 && (
+          {paginatedInventory.length === 0 && (
             <div className="text-center py-20 animate-fade-in">
               <PackageIcon className="h-20 w-20 mx-auto mb-6 text-muted-foreground opacity-40" />
               <h3 className="text-2xl font-semibold text-foreground mb-3">
@@ -497,6 +534,29 @@ export function InventorySearchPage() {
             </div>
           )}
         </div>
+
+        {/* Pagination for desktop */}
+        {totalPages > 1 && (
+          <div className="hidden md:flex items-center justify-center gap-2 mt-6 pb-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 text-foreground font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Product Details Modal */}
