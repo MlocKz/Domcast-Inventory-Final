@@ -22,6 +22,9 @@
       .loading-fallback { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
     </style>
     <script>
+      // Test if JavaScript is executing
+      console.log('HTML script executing - JavaScript is working');
+      
       // Load fonts asynchronously to eliminate render-blocking
       const fontLink = document.createElement('link');
       fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
@@ -29,6 +32,11 @@
       fontLink.media = 'print';
       fontLink.onload = function() { this.media = 'all'; };
       document.head.appendChild(fontLink);
+      
+      // Check if root element exists
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, root element:', document.getElementById('root'));
+      });
     </script>
     <title>DomCast Inventory</title>
   </head>
