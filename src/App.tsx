@@ -221,11 +221,10 @@ export default function App() {
             } else {
                 const shipmentsData = shipmentsResult.data || [];
                 
-                // For shipments without user_email, fetch from profiles
-                const shipmentsNeedingEmail = shipmentsData.filter((s: any) => !s.user_email && s.user_id);
+                // Fetch user emails from profiles for all shipments
+                const userIds = [...new Set(shipmentsData.map((s: any) => s.user_id).filter(Boolean))];
                 
-                if (shipmentsNeedingEmail.length > 0) {
-                    const userIds = [...new Set(shipmentsNeedingEmail.map((s: any) => s.user_id))];
+                if (userIds.length > 0) {
                     const { data: profiles } = await supabase
                         .from('profiles')
                         .select('id, email')
@@ -233,27 +232,15 @@ export default function App() {
                     
                     const emailMap = new Map(profiles?.map((p: any) => [p.id, p.email]) || []);
                     
-                    // Update shipments with emails
-                    const updatedShipments = shipmentsData.map((shipment: any) => {
-                        if (!shipment.user_email && shipment.user_id) {
-                            const email = emailMap.get(shipment.user_id);
-                            if (email) {
-                                // Update in database for future loads
-                                supabase
-                                    .from('shipments')
-                                    .update({ user_email: email })
-                                    .eq('id', shipment.id)
-                                    .then(() => {}); // Fire and forget
-                                
-                                return { ...shipment, user_email: email };
-                            }
-                        }
-                        return shipment;
-                    });
+                    // Add user_email to shipments for display (client-side only)
+                    const shipmentsWithEmails = shipmentsData.map((shipment: any) => ({
+                        ...shipment,
+                        user_email: emailMap.get(shipment.user_id) || 'Unknown'
+                    }));
                     
-                    setShipments(updatedShipments);
+                    setShipments(shipmentsWithEmails);
                 } else {
-                    setShipments(shipmentsData);
+                    setShipments(shipmentsData.map((s: any) => ({ ...s, user_email: 'Unknown' })));
                 }
             }
         } catch (error) {
@@ -328,8 +315,7 @@ export default function App() {
                     shipment_id: shipmentId,
                     type,
                     items,
-                    user_id: user!.id,
-                    user_email: user!.email
+                    user_id: user!.id
                 });
 
             if (error) throw error;
@@ -361,9 +347,7 @@ export default function App() {
                 .from('shipments')
                 .update({
                     shipment_id: updatedShipment.shipment_id,
-                    items: updatedShipment.items,
-                    updated_by: user!.id,
-                    updated_by_email: user!.email
+                    items: updatedShipment.items
                 })
                 .eq('id', updatedShipment.id);
 
