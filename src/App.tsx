@@ -205,7 +205,7 @@ export default function App() {
                     .order('sku'),
                 supabase
                     .from('shipments')
-                    .select('*')
+                    .select('*, profiles!shipments_user_id_fkey(email)')
                     .order('shipment_id', { ascending: false })
                     .order('id', { ascending: false })
             ]);
@@ -293,7 +293,8 @@ export default function App() {
                     shipment_id: shipmentId,
                     type,
                     items,
-                    user_id: user!.id
+                    user_id: user!.id,
+                    user_email: user!.email
                 });
 
             if (error) throw error;
