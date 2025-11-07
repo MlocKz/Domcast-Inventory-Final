@@ -33,7 +33,29 @@ export default function App() {
     const [shipments, setShipments] = useState<Shipment[]>([]);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
+    // Test Supabase connection on mount
     useEffect(() => {
+        console.log('Testing Supabase connection...');
+        supabase.auth.getSession()
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error('Supabase connection error:', error);
+                } else {
+                    console.log('Supabase connection successful');
+                }
+            })
+            .catch((error) => {
+                console.error('Supabase connection failed:', error);
+            });
+    }, []);
+
+    useEffect(() => {
+        // Set a timeout to prevent infinite loading
+        const loadingTimeout = setTimeout(() => {
+            console.warn('Loading timeout reached, setting isLoading to false');
+            setIsLoading(false);
+        }, 10000); // 10 second timeout
+
         // Listen for auth changes first to avoid missing events
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             // Only synchronous updates here to avoid deadlocks
@@ -44,21 +66,37 @@ export default function App() {
                 }, 0);
             } else {
                 setUserRole(null);
+                clearTimeout(loadingTimeout);
                 setIsLoading(false);
             }
         });
 
-        // Then check for existing session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchUserProfile(session.user.id);
-            } else {
+        // Then check for existing session with error handling
+        supabase.auth.getSession()
+            .then(({ data: { session }, error }) => {
+                clearTimeout(loadingTimeout);
+                if (error) {
+                    console.error('Error getting session:', error);
+                    setIsLoading(false);
+                    return;
+                }
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    fetchUserProfile(session.user.id);
+                } else {
+                    setIsLoading(false);
+                }
+            })
+            .catch((error) => {
+                clearTimeout(loadingTimeout);
+                console.error('Failed to get session:', error);
                 setIsLoading(false);
-            }
-        });
+            });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            clearTimeout(loadingTimeout);
+            subscription.unsubscribe();
+        };
     }, []);
 
     // Load data when user changes
@@ -80,13 +118,28 @@ export default function App() {
     };
 
     const fetchUserProfile = async (userId: string) => {
+        let profileTimeoutCleared = false;
         try {
+            // Set a timeout for the profile fetch
+            const profileTimeout = setTimeout(() => {
+                if (!profileTimeoutCleared) {
+                    console.warn('Profile fetch timeout, using defaults');
+                    setUser({ id: userId, email: '', status: 'pending' } as any);
+                    setUserRole('submitter');
+                    setIsLoading(false);
+                    profileTimeoutCleared = true;
+                }
+            }, 8000); // 8 second timeout
+
             // Fetch profile and role separately
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .maybeSingle();
+
+            clearTimeout(profileTimeout);
+            profileTimeoutCleared = true;
 
             if (profileError) {
                 console.error('Error fetching user profile:', profileError);
