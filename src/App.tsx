@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment } from './lib/supabase';
 import {
@@ -15,13 +15,15 @@ import {
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { PendingApprovalPage } from './components/auth/PendingApprovalPage';
-import { InventorySearchPage } from './components/inventory/InventorySearchPage';
-import { AdminHistoryPage } from './components/admin/AdminHistoryPage';
-import { UserManagementPage } from './components/admin/UserManagementPage';
-import { AccountSettingsPage } from './components/account/AccountSettingsPage';
-import { ChangeEmailPage } from './components/account/ChangeEmailPage';
-import { ChangePasswordPage } from './components/account/ChangePasswordPage';
-import { PackingSlipScanner } from './components/shipment/PackingSlipScanner';
+
+// Lazy load heavy components for faster initial load
+const InventorySearchPage = lazy(() => import('./components/inventory/InventorySearchPage').then(m => ({ default: m.InventorySearchPage })));
+const AdminHistoryPage = lazy(() => import('./components/admin/AdminHistoryPage').then(m => ({ default: m.AdminHistoryPage })));
+const UserManagementPage = lazy(() => import('./components/admin/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
+const AccountSettingsPage = lazy(() => import('./components/account/AccountSettingsPage').then(m => ({ default: m.AccountSettingsPage })));
+const ChangeEmailPage = lazy(() => import('./components/account/ChangeEmailPage').then(m => ({ default: m.ChangeEmailPage })));
+const ChangePasswordPage = lazy(() => import('./components/account/ChangePasswordPage').then(m => ({ default: m.ChangePasswordPage })));
+const PackingSlipScanner = lazy(() => import('./components/shipment/PackingSlipScanner').then(m => ({ default: m.PackingSlipScanner })));
 
 // Main App Component
 export default function App() {
@@ -33,37 +35,19 @@ export default function App() {
     const [shipments, setShipments] = useState<Shipment[]>([]);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
-    // Test Supabase connection on mount
     useEffect(() => {
-        console.log('Testing Supabase connection...');
-        supabase.auth.getSession()
-            .then(({ data, error }) => {
-                if (error) {
-                    console.error('Supabase connection error:', error);
-                } else {
-                    console.log('Supabase connection successful');
-                }
-            })
-            .catch((error) => {
-                console.error('Supabase connection failed:', error);
-            });
-    }, []);
-
-    useEffect(() => {
-        // Set a timeout to prevent infinite loading
+        // Reduced timeout for faster loading - 3 seconds instead of 10
         const loadingTimeout = setTimeout(() => {
             console.warn('Loading timeout reached, setting isLoading to false');
             setIsLoading(false);
-        }, 10000); // 10 second timeout
+        }, 3000); // 3 second timeout for faster perceived loading
 
-        // Listen for auth changes first to avoid missing events
+        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            // Only synchronous updates here to avoid deadlocks
             setUser(session?.user ?? null);
             if (session?.user) {
-                setTimeout(() => {
-                    fetchUserProfile(session.user!.id);
-                }, 0);
+                // Fetch profile immediately without setTimeout
+                fetchUserProfile(session.user.id);
             } else {
                 setUserRole(null);
                 clearTimeout(loadingTimeout);
@@ -71,7 +55,7 @@ export default function App() {
             }
         });
 
-        // Then check for existing session with error handling
+        // Check for existing session with error handling - parallel with auth listener
         supabase.auth.getSession()
             .then(({ data: { session }, error }) => {
                 clearTimeout(loadingTimeout);
@@ -120,7 +104,7 @@ export default function App() {
     const fetchUserProfile = async (userId: string) => {
         let profileTimeoutCleared = false;
         try {
-            // Set a timeout for the profile fetch
+            // Reduced timeout for faster loading - 2 seconds
             const profileTimeout = setTimeout(() => {
                 if (!profileTimeoutCleared) {
                     console.warn('Profile fetch timeout, using defaults');
@@ -129,17 +113,27 @@ export default function App() {
                     setIsLoading(false);
                     profileTimeoutCleared = true;
                 }
-            }, 8000); // 8 second timeout
+            }, 2000); // 2 second timeout
 
-            // Fetch profile and role separately
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .maybeSingle();
+            // Fetch profile and role in parallel for faster loading
+            const [profileResult, roleResult] = await Promise.all([
+                supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .maybeSingle(),
+                supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', userId)
+                    .maybeSingle()
+            ]);
 
             clearTimeout(profileTimeout);
             profileTimeoutCleared = true;
+
+            const { data: profileData, error: profileError } = profileResult;
+            const { data: roleData, error: roleError } = roleResult;
 
             if (profileError) {
                 console.error('Error fetching user profile:', profileError);
@@ -148,13 +142,6 @@ export default function App() {
                 setIsLoading(false);
                 return;
             }
-
-            // Fetch user role from user_roles table
-            const { data: roleData, error: roleError } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', userId)
-                .maybeSingle();
 
             if (roleError) {
                 console.error('Error fetching user role:', roleError);
@@ -409,15 +396,39 @@ export default function App() {
             notification={notification}
             setNotification={setNotification}
         >
-            {currentPage === 'inventory' && <InventorySearchPage />}
+            {currentPage === 'inventory' && (
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <InventorySearchPage />
+                </Suspense>
+            )}
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
             {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
-            {currentPage === 'user_management' && <UserManagementPage />}
-            {currentPage === 'admin_history' && <AdminHistoryPage />}
-            {currentPage === 'account_settings' && <AccountSettingsPage />}
-            {currentPage === 'change_email' && <ChangeEmailPage onBack={() => setCurrentPage('account_settings')} />}
-            {currentPage === 'change_password' && <ChangePasswordPage onBack={() => setCurrentPage('account_settings')} />}
+            {currentPage === 'user_management' && (
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <UserManagementPage />
+                </Suspense>
+            )}
+            {currentPage === 'admin_history' && (
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <AdminHistoryPage />
+                </Suspense>
+            )}
+            {currentPage === 'account_settings' && (
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <AccountSettingsPage />
+                </Suspense>
+            )}
+            {currentPage === 'change_email' && (
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <ChangeEmailPage onBack={() => setCurrentPage('account_settings')} />
+                </Suspense>
+            )}
+            {currentPage === 'change_password' && (
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <ChangePasswordPage onBack={() => setCurrentPage('account_settings')} />
+                </Suspense>
+            )}
         </AppLayout>
     );
 }
@@ -823,11 +834,13 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 
             {/* Packing Slip Scanner */}
             {showScanner && (
-                <PackingSlipScanner
-                    onItemsExtracted={handlePackingSlipItems}
-                    inventory={inventory}
-                    onClose={() => setShowScanner(false)}
-                />
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
+                    <PackingSlipScanner
+                        onItemsExtracted={handlePackingSlipItems}
+                        inventory={inventory}
+                        onClose={() => setShowScanner(false)}
+                    />
+                </Suspense>
             )}
         </div>
     );

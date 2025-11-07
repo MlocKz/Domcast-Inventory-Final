@@ -13,17 +13,33 @@ export default defineConfig(({ mode }) => ({
     target: 'es2022',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
-          supabase: ['@supabase/supabase-js'],
-          utils: ['date-fns', 'clsx', 'tailwind-merge']
+        manualChunks: (id) => {
+          // Split node_modules into smaller chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'ui';
+            }
+            if (id.includes('@supabase')) {
+              return 'supabase';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            if (id.includes('date-fns') || id.includes('clsx') || id.includes('tailwind-merge')) {
+              return 'utils';
+            }
+            return 'vendor-other';
+          }
         }
       }
     },
     chunkSizeWarningLimit: 1000,
     sourcemap: false,
     minify: 'esbuild',
+    cssCodeSplit: true,
   },
   plugins: [
     react(),
