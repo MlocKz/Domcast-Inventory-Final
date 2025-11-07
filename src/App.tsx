@@ -219,7 +219,42 @@ export default function App() {
             if (shipmentsResult.error) {
                 console.error('Error loading shipments:', shipmentsResult.error);
             } else {
-                setShipments(shipmentsResult.data || []);
+                const shipmentsData = shipmentsResult.data || [];
+                
+                // For shipments without user_email, fetch from profiles
+                const shipmentsNeedingEmail = shipmentsData.filter((s: any) => !s.user_email && s.user_id);
+                
+                if (shipmentsNeedingEmail.length > 0) {
+                    const userIds = [...new Set(shipmentsNeedingEmail.map((s: any) => s.user_id))];
+                    const { data: profiles } = await supabase
+                        .from('profiles')
+                        .select('id, email')
+                        .in('id', userIds);
+                    
+                    const emailMap = new Map(profiles?.map((p: any) => [p.id, p.email]) || []);
+                    
+                    // Update shipments with emails
+                    const updatedShipments = shipmentsData.map((shipment: any) => {
+                        if (!shipment.user_email && shipment.user_id) {
+                            const email = emailMap.get(shipment.user_id);
+                            if (email) {
+                                // Update in database for future loads
+                                supabase
+                                    .from('shipments')
+                                    .update({ user_email: email })
+                                    .eq('id', shipment.id)
+                                    .then(() => {}); // Fire and forget
+                                
+                                return { ...shipment, user_email: email };
+                            }
+                        }
+                        return shipment;
+                    });
+                    
+                    setShipments(updatedShipments);
+                } else {
+                    setShipments(shipmentsData);
+                }
             }
         } catch (error) {
             console.error('Error loading data:', error);
