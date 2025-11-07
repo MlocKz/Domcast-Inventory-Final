@@ -39,13 +39,17 @@ export default function App() {
         let loadingTimeout: NodeJS.Timeout | null = null;
         let isMounted = true;
 
-        // Reduced timeout for faster loading - 2 seconds
+        // Aggressive timeout - force load after 1.5 seconds to prevent stuck loading
         loadingTimeout = setTimeout(() => {
             if (isMounted) {
-                console.warn('Loading timeout reached, setting isLoading to false');
+                console.warn('Loading timeout reached, forcing app to load');
                 setIsLoading(false);
+                // If no user after timeout, show login screen
+                if (!user) {
+                    setUser(null);
+                }
             }
-        }, 2000); // 2 second timeout for faster perceived loading
+        }, 1500); // 1.5 second timeout - very aggressive for production
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -372,7 +376,13 @@ export default function App() {
     };
 
     if (isLoading) {
-        return <div className="flex items-center justify-center min-h-screen bg-background"><p className="text-muted-foreground animate-pulse text-lg">Loading Application...</p></div>;
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mb-4"></div>
+                <p className="text-muted-foreground animate-pulse text-lg">Loading Application...</p>
+                <p className="text-muted-foreground text-sm mt-2">This should only take a few seconds...</p>
+            </div>
+        );
     }
 
     if (!user) {
