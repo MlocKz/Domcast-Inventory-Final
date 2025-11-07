@@ -123,16 +123,25 @@ export function InventorySearchPage() {
     setLoadingShipments(true);
     
     try {
-      // Query shipments where the items array contains the SKU
+      // Fetch all recent shipments and filter client-side
+      // Supabase's .contains() doesn't work well with nested JSONB arrays
       const { data: shipments, error } = await supabase
         .from('shipments')
         .select('*')
-        .contains('items', [{ itemNo: item.sku }])
         .order('timestamp', { ascending: false })
-        .limit(5);
+        .limit(50); // Fetch more to filter from
 
       if (error) throw error;
-      setRecentShipments(shipments || []);
+      
+      // Filter shipments that contain this item's SKU
+      const filteredShipments = (shipments || []).filter((shipment: any) => {
+        if (!shipment.items || !Array.isArray(shipment.items)) return false;
+        return shipment.items.some((shipmentItem: any) => 
+          shipmentItem.itemNo === item.sku
+        );
+      }).slice(0, 5); // Limit to 5 most recent
+      
+      setRecentShipments(filteredShipments);
     } catch (err: any) {
       console.error('Error loading shipments:', err);
       setRecentShipments([]);
