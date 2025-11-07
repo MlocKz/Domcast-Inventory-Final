@@ -982,21 +982,25 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold text-foreground">{title}</h2>
-                <p className="text-sm text-muted-foreground">
-                    {shipments.length} shipment{shipments.length !== 1 ? 's' : ''}
-                </p>
+            <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-1">{title}</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {shipments.length} shipment{shipments.length !== 1 ? 's' : ''} total
+                    </p>
+                </div>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {shipments.length === 0 ? (
-                    <div className="text-center py-12 card">
-                        <p className="text-muted-foreground">No shipments found.</p>
+                    <div className="text-center py-16 card">
+                        <PackageX className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                        <p className="text-muted-foreground text-lg font-medium">No shipments found.</p>
+                        <p className="text-muted-foreground/70 text-sm mt-2">Create your first shipment to get started.</p>
                     </div>
                 ) : (
                     shipments.map((shipment) => (
-                        <div key={shipment.id} className="card overflow-hidden border-border hover:border-primary/50 transition-colors">
+                        <div key={shipment.id} className="card overflow-hidden border-border hover:border-primary/50 transition-all duration-300">
                             <button
                                 onClick={() => toggleShipment(shipment.id)}
                                 className="w-full px-6 py-4 text-left hover:bg-secondary/50 transition-colors flex items-center justify-between group"
