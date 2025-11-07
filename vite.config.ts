@@ -16,9 +16,10 @@ export default defineConfig(({ mode }) => ({
         manualChunks: (id) => {
           // Split node_modules into smaller chunks
           if (id.includes('node_modules')) {
-            // React and React-DOM must be in the same chunk and loaded first
+            // React and React-DOM must be in the main bundle or loaded first
+            // Don't split React - keep it in the main bundle to ensure it loads first
             if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react';
+              return undefined; // Keep React in main bundle
             }
             if (id.includes('@radix-ui')) {
               return 'ui';
