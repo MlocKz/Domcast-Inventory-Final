@@ -1,29 +1,17 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { User, InventoryItem, Shipment } from './lib/supabase';
 import {
-  PackageSearch as InventoryIcon,
   PackageCheck as ShipmentIcon,
-  History as HistoryIcon,
   ArrowDown as IncomingIcon,
   ArrowUp as OutgoingIcon,
   Trash2 as TrashIcon,
-  ChevronDown,
   AlertTriangle,
-  LogOut as LogOutIcon,
-  FilePenLine as EditIcon,
-  BarChart2 as AnalyticsIcon,
-  Search as SearchIcon,
-  X as XIcon,
-  Menu as MenuIcon,
   Camera as CameraIcon,
   PlusCircle as PlusCircleIcon,
-  Download as DownloadIcon,
-  FileCheck2,
   Package as PackageIcon,
+  Search as SearchIcon,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import DccaLogo from './assets/DCCA_Logo.png';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { PendingApprovalPage } from './components/auth/PendingApprovalPage';
@@ -35,29 +23,15 @@ import { ChangeEmailPage } from './components/account/ChangeEmailPage';
 import { ChangePasswordPage } from './components/account/ChangePasswordPage';
 import { PackingSlipScanner } from './components/shipment/PackingSlipScanner';
 
-const supabase = _supabase as any;
-
 // Main App Component
 export default function App() {
     const [user, setUser] = useState<User | null>(null);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [authError, setAuthError] = useState(false);
-    
-    // Move state from MainAppView to main App component
     const [currentPage, setCurrentPage] = useState('inventory');
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [shipments, setShipments] = useState<Shipment[]>([]);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
-
-    useEffect(() => {
-        // Set initial page based on role
-        if (userRole === 'submitter') {
-            setCurrentPage('inventory');
-        } else {
-            setCurrentPage('inventory');
-        }
-    }, [userRole]);
 
     useEffect(() => {
         // Listen for auth changes first to avoid missing events
@@ -339,18 +313,6 @@ export default function App() {
         }
     };
 
-    if (authError) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-background">
-                <div className="text-center p-8 border border-border rounded-lg bg-card shadow-lg">
-                    <h1 className="text-2xl font-bold mb-2">Authentication Error</h1>
-                    <p>The application could not authenticate with Supabase.</p>
-                    <p>Please check your configuration.</p>
-                </div>
-            </div>
-        );
-    }
-
     if (isLoading) {
         return <div className="flex items-center justify-center min-h-screen bg-background"><p className="text-muted-foreground animate-pulse text-lg">Loading Application...</p></div>;
     }
@@ -407,112 +369,7 @@ export default function App() {
     );
 }
 
-// Enhanced Inventory Page with better search and display
-function InventoryPage({ inventory }: { inventory: InventoryItem[] }) {
-    const [searchTerm, setSearchTerm] = useState('');
-
-    const filteredInventory = useMemo(() => {
-        if (!searchTerm.trim()) return inventory;
-        
-        const search = searchTerm.toLowerCase();
-        return inventory.filter(item =>
-            (item.sku && item.sku.toLowerCase().includes(search)) ||
-            (item.name && item.name.toLowerCase().includes(search)) ||
-            (item.category && item.category.toLowerCase().includes(search)) ||
-            (item.location && item.location.toLowerCase().includes(search))
-        );
-    }, [inventory, searchTerm]);
-
-    const totalItems = inventory.length;
-    const filteredCount = filteredInventory.length;
-    const lowStockItems = inventory.filter(item => item.qty_on_hand < 10).length;
-
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-foreground">Inventory</h2>
-                    <p className="text-muted-foreground">
-                        Showing {filteredCount} of {totalItems} items
-                        {lowStockItems > 0 && (
-                            <span className="ml-2 text-destructive">• {lowStockItems} low stock</span>
-                        )}
-                    </p>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <div className="relative">
-                        <SearchIcon className="h-5 w-5 absolute left-3 top-3 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Search by SKU, name, category, or location..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input pl-10 w-80"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="card p-6">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-border">
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">SKU</th>
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">Name</th>
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">Category</th>
-                                <th className="text-right py-3 px-4 font-semibold text-foreground">Qty on Hand</th>
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">UOM</th>
-                                <th className="text-left py-3 px-4 font-semibold text-foreground">Location</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredInventory.map((item) => (
-                                <tr key={item.sku} className="border-b border-border hover:bg-muted/50 transition-colors">
-                                    <td className="py-3 px-4 font-mono text-sm text-foreground font-medium">{item.sku}</td>
-                                    <td className="py-3 px-4 text-foreground">{item.name}</td>
-                                    <td className="py-3 px-4 text-muted-foreground">{item.category || '-'}</td>
-                                    <td className="py-3 px-4 text-right">
-                                        <span className={`font-semibold ${
-                                            item.qty_on_hand < 10 ? 'text-destructive' : 
-                                            item.qty_on_hand < 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
-                                        }`}>
-                                            {item.qty_on_hand.toLocaleString()}
-                                        </span>
-                                    </td>
-                                    <td className="py-3 px-4 text-muted-foreground">{item.uom}</td>
-                                    <td className="py-3 px-4 text-muted-foreground">{item.location || '-'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    
-                    {filteredInventory.length === 0 && searchTerm && (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <SearchIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No inventory items found matching "{searchTerm}"</p>
-                            <button 
-                                onClick={() => setSearchTerm('')}
-                                className="mt-2 text-primary hover:underline"
-                            >
-                                Clear search
-                            </button>
-                        </div>
-                    )}
-                    
-                    {filteredInventory.length === 0 && !searchTerm && (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <InventoryIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No inventory items available</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// Enhanced Log Shipment Page
+// Log Shipment Page
 function LogShipmentPage({ onLogShipment, inventory, role }: { 
     onLogShipment: (details: any) => void, 
     inventory: InventoryItem[], 
@@ -533,7 +390,7 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
     useEffect(() => {
         const loadExistingShipmentIds = async () => {
             try {
-                const { data, error } = await _supabase
+                const { data, error } = await supabase
                     .from('shipments')
                     .select('shipment_id');
                 
