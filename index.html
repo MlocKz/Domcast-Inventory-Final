@@ -25,6 +25,30 @@
       // Test if JavaScript is executing
       console.log('HTML script executing - JavaScript is working');
       
+      // Add a visible indicator if JavaScript is working
+      window.addEventListener('DOMContentLoaded', () => {
+        const root = document.getElementById('root');
+        if (root) {
+          // Add a timeout to show error if React doesn't mount
+          setTimeout(() => {
+            if (root.innerHTML.includes('Loading DomCast')) {
+              console.error('React failed to mount - JavaScript files may not be loading');
+              root.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; background: #000; color: #fff;">
+                  <h1 style="font-size: 24px; margin-bottom: 16px;">⚠️ Application Failed to Load</h1>
+                  <p style="color: #ccc; margin-bottom: 16px;">React did not mount. This usually means JavaScript files are not loading.</p>
+                  <p style="color: #999; font-size: 12px; margin-bottom: 16px;">Check browser console (F12) and Netlify build logs for errors.</p>
+                  <p style="color: #999; font-size: 12px; margin-bottom: 16px;">If you see this message, JavaScript is working but React isn't loading.</p>
+                  <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Reload Page
+                  </button>
+                </div>
+              `;
+            }
+          }, 5000);
+        }
+      });
+      
       // Load fonts asynchronously to eliminate render-blocking
       const fontLink = document.createElement('link');
       fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
@@ -32,11 +56,6 @@
       fontLink.media = 'print';
       fontLink.onload = function() { this.media = 'all'; };
       document.head.appendChild(fontLink);
-      
-      // Check if root element exists
-      window.addEventListener('DOMContentLoaded', () => {
-        console.log('DOM loaded, root element:', document.getElementById('root'));
-      });
     </script>
     <title>DomCast Inventory</title>
   </head>
