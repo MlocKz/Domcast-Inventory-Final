@@ -325,7 +325,9 @@ export default function App() {
                 .from('shipments')
                 .update({
                     shipment_id: updatedShipment.shipment_id,
-                    items: updatedShipment.items
+                    items: updatedShipment.items,
+                    updated_by: user!.id,
+                    updated_by_email: user!.email
                 })
                 .eq('id', updatedShipment.id);
 
@@ -943,69 +945,105 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
     };
 
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-foreground">{title}</h2>
+        <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold text-foreground">{title}</h2>
+                <p className="text-sm text-muted-foreground">
+                    {shipments.length} shipment{shipments.length !== 1 ? 's' : ''}
+                </p>
+            </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {shipments.length === 0 ? (
                     <div className="text-center py-12 card">
                         <p className="text-muted-foreground">No shipments found.</p>
                     </div>
                 ) : (
                     shipments.map((shipment) => (
-                        <div key={shipment.id} className="card overflow-hidden">
+                        <div key={shipment.id} className="card overflow-hidden border-border hover:border-primary/50 transition-colors">
                             <button
                                 onClick={() => toggleShipment(shipment.id)}
-                                className="w-full px-6 py-4 text-left hover:bg-secondary/50 transition-colors flex items-center justify-between"
+                                className="w-full px-6 py-4 text-left hover:bg-secondary/50 transition-colors flex items-center justify-between group"
                             >
-                                <div className="flex items-center space-x-6">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-foreground">
-                                            {shipment.shipment_id}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
+                                <div className="flex items-center space-x-6 flex-1">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                {shipment.shipment_id}
+                                            </h3>
+                                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                                shipment.type === 'incoming' 
+                                                    ? 'bg-green-500/20 text-green-500' 
+                                                    : 'bg-blue-500/20 text-blue-500'
+                                            }`}>
+                                                {shipment.type}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                            <span>{shipment.items.length} item{shipment.items.length !== 1 ? 's' : ''}</span>
+                                            <span>•</span>
+                                            <span>Created by {shipment.user_email || 'Unknown'}</span>
+                                            {shipment.updated_by_email && shipment.updated_by_email !== shipment.user_email && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span className="text-primary">Updated by {shipment.updated_by_email}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground/70 mt-1">
                                             {new Date(shipment.timestamp).toLocaleString()}
                                         </p>
                                     </div>
-                                    <div className="text-sm text-muted-foreground">
-                                        {shipment.items.length} item(s) • {shipment.user_email}
-                                    </div>
                                 </div>
                                 <div className={`transform transition-transform duration-200 ${expandedShipments.has(shipment.id) ? 'rotate-180' : ''}`}>
-                                    <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
                             </button>
                             
                             {expandedShipments.has(shipment.id) && (
-                                <div className="px-6 pb-4 border-t border-border animate-accordion-down">
-                                    <div className="pt-4 space-y-3">
-                                        <div className="flex items-center justify-between">
+                                <div className="px-6 pb-4 border-t border-border bg-secondary/20 animate-accordion-down">
+                                    <div className="pt-4 space-y-4">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                                                <div>
-                                                    <h4 className="text-sm font-medium text-foreground mb-1">Type:</h4>
-                                                    <p className="text-sm text-muted-foreground capitalize">{shipment.type}</p>
+                                                <div className="space-y-1">
+                                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Type</h4>
+                                                    <p className="text-sm text-foreground capitalize">{shipment.type}</p>
                                                 </div>
-                                                <div>
-                                                    <h4 className="text-sm font-medium text-foreground mb-1">User:</h4>
-                                                    <p className="text-sm text-muted-foreground">{shipment.user_email}</p>
+                                                <div className="space-y-1">
+                                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Created By</h4>
+                                                    <p className="text-sm text-foreground">{shipment.user_email || 'Unknown'}</p>
+                                                    <p className="text-xs text-muted-foreground/70">
+                                                        {new Date(shipment.timestamp).toLocaleString()}
+                                                    </p>
                                                 </div>
+                                                {shipment.updated_by_email && shipment.updated_by_email !== shipment.user_email && (
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Updated By</h4>
+                                                        <p className="text-sm text-foreground text-primary">{shipment.updated_by_email}</p>
+                                                        {shipment.updated_at && (
+                                                            <p className="text-xs text-muted-foreground/70">
+                                                                {new Date(shipment.updated_at).toLocaleString()}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 {shipment.approved_by && (
-                                                    <div>
-                                                        <h4 className="text-sm font-medium text-foreground mb-1">Approved By:</h4>
-                                                        <p className="text-sm text-muted-foreground">{shipment.approved_by}</p>
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Approved By</h4>
+                                                        <p className="text-sm text-foreground">{shipment.approved_by}</p>
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex space-x-2 ml-4">
+                                            <div className="flex space-x-2">
                                                 {onUpdateShipment && (
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             startEdit(shipment);
                                                         }}
-                                                        className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                                                     >
                                                         Edit
                                                     </button>
@@ -1018,7 +1056,7 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
                                                                 onDeleteShipment(shipment.id);
                                                             }
                                                         }}
-                                                        className="px-3 py-1 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium hover:bg-destructive/90 transition-colors"
+                                                        className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium hover:bg-destructive/90 transition-colors shadow-sm"
                                                     >
                                                         Delete
                                                     </button>
@@ -1026,17 +1064,17 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
                                             </div>
                                         </div>
                                         
-                                        <div>
-                                            <h4 className="text-sm font-medium text-foreground mb-2">Items:</h4>
-                                            <div className="space-y-2">
+                                        <div className="pt-2 border-t border-border">
+                                            <h4 className="text-sm font-semibold text-foreground mb-3">Items ({shipment.items.length})</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                 {shipment.items.map((item, index) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                                                        <div className="flex-1">
-                                                            <p className="text-sm font-medium text-foreground">{item.itemNo}</p>
-                                                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:border-primary/50 transition-colors">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-foreground truncate">{item.itemNo}</p>
+                                                            <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-sm font-medium text-foreground">Qty: {item.quantity}</p>
+                                                        <div className="ml-3 text-right">
+                                                            <p className="text-sm font-semibold text-foreground">Qty: {item.quantity}</p>
                                                         </div>
                                                     </div>
                                                 ))}

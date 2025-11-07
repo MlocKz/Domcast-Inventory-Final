@@ -68,8 +68,11 @@ export interface Shipment {
   items: ShipmentItem[]
   user_id: string
   user_email: string
+  updated_by?: string
+  updated_by_email?: string
   approved_by?: string
   timestamp: string
+  updated_at?: string
 }
 
 export interface ShipmentRequest {
