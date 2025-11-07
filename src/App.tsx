@@ -45,14 +45,22 @@ export default function App() {
         let isMounted = true;
         let subscription: any = null;
 
-        // Very aggressive timeout - force load after 1 second to prevent stuck loading
+        // Extremely aggressive timeout - force load after 500ms to prevent stuck loading
         loadingTimeout = setTimeout(() => {
             if (isMounted) {
                 console.warn('Loading timeout reached, forcing app to load');
                 setIsLoading(false);
+                // Force show login screen if no user
+                if (!user) {
+                    setUser(null);
+                }
             }
-        }, 1000); // 1 second timeout - very aggressive for production
+        }, 500); // 500ms timeout - extremely aggressive for production
 
+        // Set loading to false immediately, then try to get session
+        // This ensures the app loads even if Supabase fails
+        setIsLoading(false);
+        
         try {
             // Listen for auth changes
             const authResult = supabase.auth.onAuthStateChange((event, session) => {
@@ -64,8 +72,6 @@ export default function App() {
                     fetchUserProfile(session.user.id);
                 } else {
                     setUserRole(null);
-                    if (loadingTimeout) clearTimeout(loadingTimeout);
-                    setIsLoading(false);
                 }
             });
             subscription = authResult.data.subscription;
@@ -75,32 +81,23 @@ export default function App() {
                 .then(({ data: { session }, error }) => {
                     if (!isMounted) return;
                     
-                    if (loadingTimeout) clearTimeout(loadingTimeout);
-                    
                     if (error) {
                         console.error('Error getting session:', error);
-                        setIsLoading(false);
                         return;
                     }
                     
                     setUser(session?.user ?? null);
                     if (session?.user) {
                         fetchUserProfile(session.user.id);
-                    } else {
-                        setIsLoading(false);
                     }
                 })
                 .catch((error) => {
                     if (!isMounted) return;
-                    
-                    if (loadingTimeout) clearTimeout(loadingTimeout);
                     console.error('Failed to get session:', error);
-                    setIsLoading(false);
                 });
         } catch (error) {
             console.error('Error setting up auth:', error);
-            if (loadingTimeout) clearTimeout(loadingTimeout);
-            setIsLoading(false);
+            // App will still load, just without auth
         }
 
         return () => {
