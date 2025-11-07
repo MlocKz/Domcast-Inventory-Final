@@ -17,13 +17,13 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { PendingApprovalPage } from './components/auth/PendingApprovalPage';
 
 // Lazy load heavy components for faster initial load
-const InventorySearchPage = lazy(() => import('./components/inventory/InventorySearchPage').then(m => ({ default: m.InventorySearchPage })));
-const AdminHistoryPage = lazy(() => import('./components/admin/AdminHistoryPage').then(m => ({ default: m.AdminHistoryPage })));
-const UserManagementPage = lazy(() => import('./components/admin/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
-const AccountSettingsPage = lazy(() => import('./components/account/AccountSettingsPage').then(m => ({ default: m.AccountSettingsPage })));
-const ChangeEmailPage = lazy(() => import('./components/account/ChangeEmailPage').then(m => ({ default: m.ChangeEmailPage })));
-const ChangePasswordPage = lazy(() => import('./components/account/ChangePasswordPage').then(m => ({ default: m.ChangePasswordPage })));
-const PackingSlipScanner = lazy(() => import('./components/shipment/PackingSlipScanner').then(m => ({ default: m.PackingSlipScanner })));
+const InventorySearchPage = lazy(() => import('./components/inventory/InventorySearchPage').then(module => ({ default: module.InventorySearchPage })).catch(() => ({ default: () => <div>Error loading inventory page</div> })));
+const AdminHistoryPage = lazy(() => import('./components/admin/AdminHistoryPage').then(module => ({ default: module.AdminHistoryPage })).catch(() => ({ default: () => <div>Error loading admin history</div> })));
+const UserManagementPage = lazy(() => import('./components/admin/UserManagementPage').then(module => ({ default: module.UserManagementPage })).catch(() => ({ default: () => <div>Error loading user management</div> })));
+const AccountSettingsPage = lazy(() => import('./components/account/AccountSettingsPage').then(module => ({ default: module.AccountSettingsPage })).catch(() => ({ default: () => <div>Error loading account settings</div> })));
+const ChangeEmailPage = lazy(() => import('./components/account/ChangeEmailPage').then(module => ({ default: module.ChangeEmailPage })).catch(() => ({ default: () => <div>Error loading change email</div> })));
+const ChangePasswordPage = lazy(() => import('./components/account/ChangePasswordPage').then(module => ({ default: module.ChangePasswordPage })).catch(() => ({ default: () => <div>Error loading change password</div> })));
+const PackingSlipScanner = lazy(() => import('./components/shipment/PackingSlipScanner').then(module => ({ default: module.PackingSlipScanner })).catch(() => ({ default: () => <div>Error loading scanner</div> })));
 
 // Main App Component
 export default function App() {
@@ -36,34 +36,45 @@ export default function App() {
     const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
     useEffect(() => {
-        // Reduced timeout for faster loading - 3 seconds instead of 10
-        const loadingTimeout = setTimeout(() => {
-            console.warn('Loading timeout reached, setting isLoading to false');
-            setIsLoading(false);
-        }, 3000); // 3 second timeout for faster perceived loading
+        let loadingTimeout: NodeJS.Timeout | null = null;
+        let isMounted = true;
+
+        // Reduced timeout for faster loading - 2 seconds
+        loadingTimeout = setTimeout(() => {
+            if (isMounted) {
+                console.warn('Loading timeout reached, setting isLoading to false');
+                setIsLoading(false);
+            }
+        }, 2000); // 2 second timeout for faster perceived loading
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (!isMounted) return;
+            
             setUser(session?.user ?? null);
             if (session?.user) {
-                // Fetch profile immediately without setTimeout
+                // Fetch profile immediately
                 fetchUserProfile(session.user.id);
             } else {
                 setUserRole(null);
-                clearTimeout(loadingTimeout);
+                if (loadingTimeout) clearTimeout(loadingTimeout);
                 setIsLoading(false);
             }
         });
 
-        // Check for existing session with error handling - parallel with auth listener
+        // Check for existing session with error handling
         supabase.auth.getSession()
             .then(({ data: { session }, error }) => {
-                clearTimeout(loadingTimeout);
+                if (!isMounted) return;
+                
+                if (loadingTimeout) clearTimeout(loadingTimeout);
+                
                 if (error) {
                     console.error('Error getting session:', error);
                     setIsLoading(false);
                     return;
                 }
+                
                 setUser(session?.user ?? null);
                 if (session?.user) {
                     fetchUserProfile(session.user.id);
@@ -72,20 +83,23 @@ export default function App() {
                 }
             })
             .catch((error) => {
-                clearTimeout(loadingTimeout);
+                if (!isMounted) return;
+                
+                if (loadingTimeout) clearTimeout(loadingTimeout);
                 console.error('Failed to get session:', error);
                 setIsLoading(false);
             });
 
         return () => {
-            clearTimeout(loadingTimeout);
+            isMounted = false;
+            if (loadingTimeout) clearTimeout(loadingTimeout);
             subscription.unsubscribe();
         };
     }, []);
 
-    // Load data when user changes
+    // Load data when user changes (don't show loading screen for this)
     useEffect(() => {
-        if (user) {
+        if (user && user.id) {
             loadData();
         }
     }, [user]);
@@ -165,31 +179,35 @@ export default function App() {
     };
 
     const loadData = async () => {
-        setIsLoading(true);
+        // Don't set loading state here - user is already loaded
         try {
-            // Load inventory
-            const { data: inventoryData, error: inventoryError } = await supabase
-                .from('inventory')
-                .select('*')
-                .order('sku');
+            // Load inventory and shipments in parallel for faster loading
+            const [inventoryResult, shipmentsResult] = await Promise.all([
+                supabase
+                    .from('inventory')
+                    .select('*')
+                    .order('sku'),
+                supabase
+                    .from('shipments')
+                    .select('*')
+                    .order('shipment_id', { ascending: false })
+                    .order('id', { ascending: false })
+            ]);
 
-            if (inventoryError) throw inventoryError;
-            setInventory(inventoryData || []);
+            if (inventoryResult.error) {
+                console.error('Error loading inventory:', inventoryResult.error);
+            } else {
+                setInventory(inventoryResult.data || []);
+            }
 
-            // Load shipments
-            const { data: shipmentsData, error: shipmentsError } = await supabase
-                .from('shipments')
-                .select('*')
-                .order('shipment_id', { ascending: false })
-                .order('id', { ascending: false });
-
-            if (shipmentsError) throw shipmentsError;
-            setShipments(shipmentsData || []);
+            if (shipmentsResult.error) {
+                console.error('Error loading shipments:', shipmentsResult.error);
+            } else {
+                setShipments(shipmentsResult.data || []);
+            }
         } catch (error) {
             console.error('Error loading data:', error);
             setNotification({ show: true, message: 'Error loading data', type: 'error' });
-        } finally {
-            setIsLoading(false);
         }
     };
 
