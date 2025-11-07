@@ -71,14 +71,26 @@ export function AppSidebar({
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarHeader className="p-4 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <img src={DccaLogo} alt="DomCast Logo" className="h-8 w-8 flex-shrink-0 rounded-lg" />
-            <div className="absolute -inset-1 bg-primary/20 blur-md rounded-lg opacity-50"></div>
+      <SidebarHeader className="px-3 py-3 border-b border-border/50">
+        <div className="flex items-center justify-center gap-3 min-w-0 w-full">
+          <div className="relative flex-shrink-0 w-8 h-8 flex items-center justify-center">
+            <img 
+              src={DccaLogo} 
+              alt="DomCast Logo" 
+              className="rounded-lg object-contain mx-auto" 
+              style={{ 
+                maxWidth: '32px', 
+                maxHeight: '32px', 
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                display: 'block'
+              }}
+            />
+            <div className="absolute -inset-1 bg-primary/20 blur-md rounded-lg opacity-50 pointer-events-none"></div>
           </div>
           {!isCollapsed && (
-            <span className="font-bold text-lg text-primary tracking-tight">DomCast</span>
+            <span className="font-bold text-lg text-primary tracking-tight truncate">DomCast</span>
           )}
         </div>
       </SidebarHeader>

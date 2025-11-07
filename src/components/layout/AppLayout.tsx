@@ -167,7 +167,12 @@ export function AppLayout({
               <SidebarTrigger className="-ml-1 flex-shrink-0" />
               <div className="flex-1 flex justify-center">
                 <div className="flex items-center gap-2">
-                  <img src={DccaLogo} alt="DomCast Logo" className="h-8 w-8" />
+                  <img 
+                    src={DccaLogo} 
+                    alt="DomCast Logo" 
+                    className="h-8 w-8 flex-shrink-0 object-contain rounded-lg" 
+                    style={{ aspectRatio: '1 / 1' }}
+                  />
                   <span className="font-bold text-lg text-primary">DomCast</span>
                 </div>
               </div>
