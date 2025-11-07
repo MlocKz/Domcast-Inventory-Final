@@ -16,8 +16,9 @@ export default defineConfig(({ mode }) => ({
         manualChunks: (id) => {
           // Split node_modules into smaller chunks
           if (id.includes('node_modules')) {
+            // React and React-DOM must be in the same chunk and loaded first
             if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor';
+              return 'vendor-react';
             }
             if (id.includes('@radix-ui')) {
               return 'ui';
@@ -40,6 +41,10 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     minify: 'esbuild',
     cssCodeSplit: true,
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    },
   },
   plugins: [
     react(),
