@@ -347,6 +347,7 @@ export default function App() {
                 .from('shipments')
                 .update({
                     shipment_id: updatedShipment.shipment_id,
+                    type: updatedShipment.type,
                     items: updatedShipment.items
                 })
                 .eq('id', updatedShipment.id);
@@ -464,8 +465,8 @@ export default function App() {
                 </Suspense>
             )}
             {currentPage === 'log_shipment' && <LogShipmentPage onLogShipment={handleLogShipment} inventory={inventory} role={userRole} />}
-            {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
-            {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+            {currentPage === 'incoming' && <ShipmentHistoryPage shipments={incomingShipments} title="Incoming Shipments" inventory={inventory} onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
+            {currentPage === 'outgoing' && <ShipmentHistoryPage shipments={outgoingShipments} title="Outgoing Shipments" inventory={inventory} onUpdateShipment={updateShipment} onDeleteShipment={deleteShipment} />}
             {currentPage === 'user_management' && (
                 <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>}>
                     <UserManagementPage />
@@ -909,9 +910,10 @@ function LogShipmentPage({ onLogShipment, inventory, role }: {
 }
 
 // Simple Shipment History Page
-function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipment }: { 
+function ShipmentHistoryPage({ shipments, title, inventory, onUpdateShipment, onDeleteShipment }: { 
     shipments: Shipment[], 
     title: string,
+    inventory: InventoryItem[],
     onUpdateShipment?: (shipment: Shipment) => void,
     onDeleteShipment?: (shipmentId: string) => void
 }) {
@@ -919,8 +921,12 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
     const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
     const [editFormData, setEditFormData] = useState({
         shipment_id: '',
+        type: 'incoming' as 'incoming' | 'outgoing',
         items: [] as Array<{itemNo: string, description: string, quantity: number}>
     });
+    const [addItemSearch, setAddItemSearch] = useState('');
+    const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+    const [newItemQty, setNewItemQty] = useState('');
 
     const toggleShipment = (shipmentId: string) => {
         const newExpanded = new Set(expandedShipments);
@@ -936,21 +942,34 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
         setEditingShipment(shipment);
         setEditFormData({
             shipment_id: shipment.shipment_id,
+            type: shipment.type,
             items: [...shipment.items]
         });
+        setAddItemSearch('');
+        setSelectedItem(null);
+        setNewItemQty('');
     };
 
     const handleSaveEdit = async () => {
         if (!editingShipment || !onUpdateShipment) return;
         
+        if (editFormData.items.length === 0) {
+            alert('Please add at least one item to the shipment.');
+            return;
+        }
+        
         const updatedShipment = {
             ...editingShipment,
             shipment_id: editFormData.shipment_id,
+            type: editFormData.type,
             items: editFormData.items
         };
         
         await onUpdateShipment(updatedShipment);
         setEditingShipment(null);
+        setAddItemSearch('');
+        setSelectedItem(null);
+        setNewItemQty('');
     };
 
     const updateItemQuantity = (index: number, quantity: number) => {
@@ -962,6 +981,35 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
     const removeItem = (index: number) => {
         const newItems = editFormData.items.filter((_, i) => i !== index);
         setEditFormData({ ...editFormData, items: newItems });
+    };
+
+    const filteredItemsForAdd = useMemo(() => 
+        addItemSearch
+            ? inventory.filter(i =>
+                !editFormData.items.some(si => si.itemNo === i.sku) &&
+                (i.sku?.toLowerCase().includes(addItemSearch.toLowerCase()) || 
+                 i.name?.toLowerCase().includes(addItemSearch.toLowerCase()))
+            ).slice(0, 10)
+            : [],
+    [addItemSearch, inventory, editFormData.items]);
+
+    const handleAddItem = () => {
+        if (!selectedItem || !newItemQty || Number(newItemQty) <= 0) {
+            alert('Please select a valid item and enter a positive quantity.');
+            return;
+        }
+        
+        setEditFormData({
+            ...editFormData,
+            items: [...editFormData.items, {
+                itemNo: selectedItem.sku,
+                description: selectedItem.name,
+                quantity: Number(newItemQty)
+            }]
+        });
+        setSelectedItem(null);
+        setNewItemQty('');
+        setAddItemSearch('');
     };
 
     return (
@@ -1114,8 +1162,8 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
 
             {/* Edit Shipment Modal */}
             {editingShipment && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-card p-6 rounded-xl border border-border max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => e.target === e.currentTarget && setEditingShipment(null)}>
+                    <div className="bg-card p-6 rounded-xl border border-border max-w-3xl w-full mx-4 max-h-[85vh] overflow-y-auto">
                         <h3 className="text-xl font-semibold text-foreground mb-4">Edit Shipment</h3>
                         
                         <div className="space-y-4">
@@ -1128,43 +1176,148 @@ function ShipmentHistoryPage({ shipments, title, onUpdateShipment, onDeleteShipm
                                     className="input w-full"
                                 />
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Shipment Type</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditFormData({ ...editFormData, type: 'incoming' })}
+                                        className={`flex items-center justify-center space-x-2 p-3 rounded-lg font-semibold transition-all duration-300 ${
+                                            editFormData.type === 'incoming' 
+                                                ? 'bg-green-500/20 text-green-500 border-2 border-green-500/50' 
+                                                : 'bg-secondary/50 text-muted-foreground border-2 border-transparent hover:border-primary/30'
+                                        }`}
+                                    >
+                                        <span>Incoming</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditFormData({ ...editFormData, type: 'outgoing' })}
+                                        className={`flex items-center justify-center space-x-2 p-3 rounded-lg font-semibold transition-all duration-300 ${
+                                            editFormData.type === 'outgoing' 
+                                                ? 'bg-blue-500/20 text-blue-500 border-2 border-blue-500/50' 
+                                                : 'bg-secondary/50 text-muted-foreground border-2 border-transparent hover:border-primary/30'
+                                        }`}
+                                    >
+                                        <span>Outgoing</span>
+                                    </button>
+                                </div>
+                            </div>
                             
                             <div>
-                                <h4 className="text-sm font-medium text-foreground mb-2">Items</h4>
-                                <div className="space-y-2">
-                                    {editFormData.items.map((item, index) => (
-                                        <div key={index} className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-lg">
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium text-foreground">{item.itemNo}</p>
-                                                <p className="text-xs text-muted-foreground">{item.description}</p>
-                                            </div>
+                                <h4 className="text-sm font-medium text-foreground mb-2">Items ({editFormData.items.length})</h4>
+                                
+                                {/* Add Item Section */}
+                                <div className="mb-4 p-4 bg-secondary/20 rounded-lg border border-border">
+                                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Add New Item</h5>
+                                    <div className="space-y-3">
+                                        <div className="relative">
                                             <input
-                                                type="number"
-                                                min="0"
-                                                value={item.quantity}
-                                                onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 0)}
-                                                className="input w-20"
+                                                type="text"
+                                                value={addItemSearch}
+                                                onChange={(e) => {
+                                                    setAddItemSearch(e.target.value);
+                                                    setSelectedItem(null);
+                                                }}
+                                                onFocus={(e) => e.target.select()}
+                                                placeholder="Search by SKU or name..."
+                                                className="input w-full"
                                             />
-                                            <button
-                                                onClick={() => removeItem(index)}
-                                                className="px-2 py-1 bg-destructive text-destructive-foreground rounded text-sm"
-                                            >
-                                                Remove
-                                            </button>
+                                            {addItemSearch && filteredItemsForAdd.length > 0 && (
+                                                <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                    {filteredItemsForAdd.map((item) => (
+                                                        <button
+                                                            key={item.sku}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedItem(item);
+                                                                setAddItemSearch(`${item.sku} - ${item.name}`);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors"
+                                                        >
+                                                            <div className="font-medium text-foreground">{item.sku}</div>
+                                                            <div className="text-xs text-muted-foreground">{item.name}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
+                                        {selectedItem && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-medium text-foreground">{selectedItem.sku}</p>
+                                                    <p className="text-xs text-muted-foreground">{selectedItem.name}</p>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={newItemQty}
+                                                    onChange={(e) => setNewItemQty(e.target.value)}
+                                                    placeholder="Qty"
+                                                    className="input w-24"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddItem}
+                                                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                                                >
+                                                    Add
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Existing Items */}
+                                <div className="space-y-2">
+                                    {editFormData.items.length === 0 ? (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            <p className="text-sm">No items in this shipment. Add items above.</p>
+                                        </div>
+                                    ) : (
+                                        editFormData.items.map((item, index) => (
+                                            <div key={index} className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-lg border border-border">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-foreground truncate">{item.itemNo}</p>
+                                                    <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 0)}
+                                                    className="input w-20"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeItem(index)}
+                                                    className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium hover:bg-destructive/90 transition-colors"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>
                         
-                        <div className="flex justify-end space-x-3 mt-6">
+                        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-border">
                             <button
-                                onClick={() => setEditingShipment(null)}
+                                type="button"
+                                onClick={() => {
+                                    setEditingShipment(null);
+                                    setAddItemSearch('');
+                                    setSelectedItem(null);
+                                    setNewItemQty('');
+                                }}
                                 className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
+                                type="button"
                                 onClick={handleSaveEdit}
                                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
                             >
