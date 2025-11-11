@@ -44,59 +44,90 @@ export default function App() {
         let loadingTimeout: NodeJS.Timeout | null = null;
         let isMounted = true;
         let subscription: any = null;
+        let sessionCheckAttempts = 0;
+        const MAX_SESSION_CHECK_ATTEMPTS = 3;
 
-        // Extremely aggressive timeout - force load after 500ms to prevent stuck loading
+        // Function to check and restore session
+        const checkSession = async () => {
+            if (!isMounted) return;
+            
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (!isMounted) return;
+                
+                if (error) {
+                    console.error('Error getting session:', error);
+                    // Retry if we haven't exceeded max attempts
+                    if (sessionCheckAttempts < MAX_SESSION_CHECK_ATTEMPTS) {
+                        sessionCheckAttempts++;
+                        setTimeout(checkSession, 500 * sessionCheckAttempts);
+                    }
+                    return;
+                }
+                
+                if (session?.user) {
+                    setUser(session.user);
+                    await fetchUserProfile(session.user.id);
+                } else {
+                    // No session found - check if we should retry
+                    if (sessionCheckAttempts < MAX_SESSION_CHECK_ATTEMPTS) {
+                        // Try to restore session again (localStorage might not be ready yet)
+                        sessionCheckAttempts++;
+                        setTimeout(checkSession, 500 * sessionCheckAttempts);
+                    } else {
+                        setUser(null);
+                        setUserRole(null);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to get session:', error);
+                if (sessionCheckAttempts < MAX_SESSION_CHECK_ATTEMPTS) {
+                    sessionCheckAttempts++;
+                    setTimeout(checkSession, 500 * sessionCheckAttempts);
+                } else {
+                    setUser(null);
+                    setUserRole(null);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        // Extremely aggressive timeout - force load after 2 seconds to prevent stuck loading
         loadingTimeout = setTimeout(() => {
             if (isMounted) {
                 console.warn('Loading timeout reached, forcing app to load');
                 setIsLoading(false);
-                // Force show login screen if no user
-                if (!user) {
-                    setUser(null);
-                }
             }
-        }, 500); // 500ms timeout - extremely aggressive for production
-
-        // Set loading to false immediately, then try to get session
-        // This ensures the app loads even if Supabase fails
-        setIsLoading(false);
+        }, 2000); // 2 second timeout
         
         try {
             // Listen for auth changes
-            const authResult = supabase.auth.onAuthStateChange((event, session) => {
+            const authResult = supabase.auth.onAuthStateChange(async (event, session) => {
                 if (!isMounted) return;
+                
+                console.log('Auth state changed:', event, session?.user?.email);
                 
                 setUser(session?.user ?? null);
                 if (session?.user) {
                     // Fetch profile immediately
-                    fetchUserProfile(session.user.id);
+                    await fetchUserProfile(session.user.id);
                 } else {
                     setUserRole(null);
                 }
+                
+                setIsLoading(false);
             });
             subscription = authResult.data.subscription;
 
-            // Check for existing session with error handling
-            supabase.auth.getSession()
-                .then(({ data: { session }, error }) => {
-                    if (!isMounted) return;
-                    
-                    if (error) {
-                        console.error('Error getting session:', error);
-                        return;
-                    }
-                    
-                    setUser(session?.user ?? null);
-                    if (session?.user) {
-                        fetchUserProfile(session.user.id);
-                    }
-                })
-                .catch((error) => {
-                    if (!isMounted) return;
-                    console.error('Failed to get session:', error);
-                });
+            // Check for existing session immediately
+            checkSession();
         } catch (error) {
             console.error('Error setting up auth:', error);
+            setIsLoading(false);
             // App will still load, just without auth
         }
 
