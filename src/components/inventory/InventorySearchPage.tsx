@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SearchIcon, PackageIcon, AlertCircle, Download, Eye, Package, TruckIcon, Calendar, DollarSign, MapPin, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface InventoryItem {
   sku: string;
@@ -19,7 +20,11 @@ interface InventoryItem {
   updated_at: string;
 }
 
-export function InventorySearchPage() {
+interface InventorySearchPageProps {
+  user: SupabaseUser | null;
+}
+
+export function InventorySearchPage({ user }: InventorySearchPageProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -87,9 +92,25 @@ export function InventorySearchPage() {
   }, []);
 
   const handleSaveEdit = async () => {
-    if (!editingItem) return;
+    if (!editingItem || !user) return;
     
     try {
+      // Track changes
+      const changes: Record<string, { old: any; new: any }> = {};
+      
+      if (editingItem.qty_on_hand !== editFormData.qty_on_hand) {
+        changes.qty_on_hand = { old: editingItem.qty_on_hand, new: editFormData.qty_on_hand };
+      }
+      if ((editingItem.min_qty || 0) !== editFormData.min_qty) {
+        changes.min_qty = { old: editingItem.min_qty || 0, new: editFormData.min_qty };
+      }
+      if ((editingItem.notes || '') !== (editFormData.notes || '')) {
+        changes.notes = { old: editingItem.notes || '', new: editFormData.notes || '' };
+      }
+      if (editingItem.classification !== editFormData.classification) {
+        changes.classification = { old: editingItem.classification, new: editFormData.classification };
+      }
+
       const { error } = await supabase
         .from('inventory')
         .update({
@@ -101,6 +122,26 @@ export function InventorySearchPage() {
         .eq('sku', editingItem.sku);
 
       if (error) throw error;
+
+      // Log inventory change if there were changes
+      if (Object.keys(changes).length > 0) {
+        // Store inventory change as a special shipment entry for tracking
+        // Store the old values in the items array as a special format
+        await supabase
+          .from('shipments')
+          .insert({
+            shipment_id: `INV-CHANGE-${editingItem.sku}-${Date.now()}`,
+            type: 'incoming', // Dummy type - we'll identify by shipment_id prefix
+            items: [{
+              itemNo: editingItem.sku,
+              description: `Inventory Change - Old Qty: ${editingItem.qty_on_hand}, New Qty: ${editFormData.qty_on_hand}`,
+              quantity: editFormData.qty_on_hand,
+              old_qty: editingItem.qty_on_hand,
+              changes: changes // Store all changes
+            }],
+            user_id: user.id
+          });
+      }
       
       setEditingItem(null);
       loadInventory(); // Reload to get updated data

@@ -73,6 +73,7 @@ export interface Shipment {
   approved_by?: string
   timestamp: string
   updated_at?: string
+  changes?: Record<string, { old: any; new: any }> | null
 }
 
 export interface ShipmentRequest {
