@@ -402,7 +402,9 @@ export default function App() {
         }
     };
 
-    const incomingShipments = shipments.filter(s => s.type === 'incoming');
+    const incomingShipments = shipments
+        .filter(s => s.type === 'incoming')
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     const outgoingShipments = shipments
         .filter(s => s.type === 'outgoing')
         .sort((a, b) => {
